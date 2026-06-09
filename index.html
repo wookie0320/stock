@@ -107,8 +107,9 @@ header .date{font-size:.78rem;color:var(--ink-faint);font-weight:500;}
 .sheet{position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--paper);border-radius:22px 22px 0 0;
   max-width:480px;margin:0 auto;padding:8px 20px calc(22px + env(safe-area-inset-bottom));
   transform:translateY(110%);transition:transform .3s cubic-bezier(.2,.8,.2,1);
-  box-shadow:0 -8px 40px rgba(20,21,25,.18);max-height:92vh;overflow-y:auto;}
-.sheet.on{transform:none;}
+  box-shadow:0 -8px 40px rgba(20,21,25,.18);max-height:92vh;overflow-y:auto;
+  pointer-events:none;}
+.sheet.on{transform:none;pointer-events:auto;}
 .grip{width:40px;height:4px;background:var(--line);border-radius:999px;margin:8px auto 16px;}
 .sheet h3{margin:0 0 4px;font-size:1.12rem;font-weight:800;}
 
