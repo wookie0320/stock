@@ -147,7 +147,7 @@ header .date{font-size:.78rem;color:var(--ink-faint);font-weight:500;}
 .lot input:focus{border-color:var(--ink);}
 .lot .r1{margin-bottom:8px;}
 .lot .r2{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center;}
-.lot-del{border:1px solid var(--line);background:var(--paper);border-radius:9px;width:40px;height:40px;font-size:.9rem;color:var(--ink-faint);cursor:pointer;}
+.lot-del{border:1px solid var(--line);background:var(--paper);border-radius:99px;width:40px;height:40px;font-size:.9rem;color:var(--ink-faint);cursor:pointer;}
 .avg-line{font-size:.82rem;color:var(--ink-soft);margin:10px 2px 18px;font-weight:600;}
 .avg-line b{color:var(--ink);font-weight:800;}
 
@@ -346,7 +346,8 @@ const PROXY='https://api.allorigins.win/raw?url=';
 const STORE_KEY='portfolio:positions:v2';
 const FX_KEY='portfolio:fx:v2';
 
-let supabase = null;
+// CDN이 정의하는 전역 변수 'supabase'와의 충돌을 방지하기 위해 'dbClient'로 명칭을 변경합니다.
+let dbClient = null;
 let user = null;
 let positions=[];
 let activeTab='kr';
@@ -405,7 +406,8 @@ async function initSupabase() {
   }
 
   try {
-    supabase = window.supabase.createClient(url, key);
+    // window.supabase는 CDN에서 로드된 전역 라이브러리 객체입니다.
+    dbClient = window.supabase.createClient(url, key);
     return true;
   } catch (e) {
     console.error('Supabase client creation error:', e);
@@ -418,8 +420,8 @@ async function initSupabase() {
 }
 
 async function checkSession() {
-  if (!supabase) return;
-  const { data: { session }, error } = await supabase.auth.getSession();
+  if (!dbClient) return;
+  const { data: { session }, error } = await dbClient.auth.getSession();
   
   if (session) {
     user = session.user;
@@ -460,7 +462,7 @@ $('loginBtn').addEventListener('click', async () => {
     return;
   }
   $('authError').textContent = '로그인 중...';
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await dbClient.auth.signInWithPassword({ email, password });
   if (error) {
     $('authError').textContent = error.message;
   } else {
@@ -477,7 +479,7 @@ $('signUpBtn').addEventListener('click', async () => {
     return;
   }
   $('authError').textContent = '회원가입 중...';
-  const { data, error } = await supabase.auth.signUp({ email, password });
+  const { data, error } = await dbClient.auth.signUp({ email, password });
   if (error) {
     $('authError').textContent = error.message;
   } else {
@@ -486,8 +488,8 @@ $('signUpBtn').addEventListener('click', async () => {
 });
 
 $('logoutBtn').addEventListener('click', async () => {
-  if (supabase) {
-    await supabase.auth.signOut();
+  if (dbClient) {
+    await dbClient.auth.signOut();
     window.location.reload();
   }
 });
@@ -499,10 +501,10 @@ async function load(){
     if(f) applyFx(JSON.parse(f));
   }catch(e){}
 
-  if (!supabase || !user) return;
+  if (!dbClient || !user) return;
 
   try {
-    const { data, error } = await supabase
+    const { data, error } = await dbClient
       .from('stocks')
       .select('*')
       .order('created_at', { ascending: true });
@@ -788,14 +790,14 @@ async function onSave(){
   if(!draft.name){$('f-name').focus();return;}
   draft.lots=draft.lots.filter(l=>(+l.price||0)>0&&(+l.qty||0)>0);
   
-  if(!supabase || !user) {
+  if(!dbClient || !user) {
     alert('슈파베이스가 연동되어 있지 않거나 로그인 세션이 만료되었습니다.');
     return;
   }
 
   try {
     if(editingId){
-      const { error } = await supabase
+      const { error } = await dbClient
         .from('stocks')
         .update({
           market: draft.market,
@@ -808,7 +810,7 @@ async function onSave(){
         .eq('id', editingId);
       if (error) throw error;
     } else {
-      const { error } = await supabase
+      const { error } = await dbClient
         .from('stocks')
         .insert({
           user_id: user.id,
@@ -834,10 +836,10 @@ async function onSave(){
 
 async function onDelete(){
   if(!confirm('이 종목을 삭제하시겠습니까?')) return;
-  if(!supabase || !user) return;
+  if(!dbClient || !user) return;
 
   try {
-    const { error } = await supabase
+    const { error } = await dbClient
       .from('stocks')
       .delete()
       .eq('id', editingId);
@@ -878,10 +880,10 @@ $('importFile').addEventListener('change',e=>{
       if(!o||!Array.isArray(o.positions)) throw 0;
       if(!confirm('지금 데이터를 백업 파일 내용으로 덮어쓸까요?\n(기존 입력된 내역은 삭제되고 백업 데이터가 슈파베이스 클라우드에 업로드됩니다)')){$('importFile').value='';return;}
       
-      if (!supabase || !user) return;
+      if (!dbClient || !user) return;
 
       // 1. 기존 데이터 전체 삭제
-      const { error: delError } = await supabase
+      const { error: delError } = await dbClient
         .from('stocks')
         .delete()
         .eq('user_id', user.id);
@@ -899,7 +901,7 @@ $('importFile').addEventListener('change',e=>{
       }));
 
       if (newItems.length > 0) {
-        const { error: insError } = await supabase
+        const { error: insError } = await dbClient
           .from('stocks')
           .insert(newItems);
         if (insError) throw insError;
