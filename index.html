@@ -782,17 +782,81 @@ function readSheet(){
   draft.ticker=$('f-ticker').value.trim(); draft.cur=$('f-cur').value;
   draft.lots=Array.from($('lots').querySelectorAll('.lot')).map(r=>({
     date:r.querySelector('.lot-date').value,
-    price:r.querySelector('.lot-price').value,
-    qty:r.querySelector('.lot-qty').value}));
+    price:parseFloat(r.querySelector('.lot-price').value) || 0,
+    qty:parseFloat(r.querySelector('.lot-qty').value) || 0}));
 }
 function recalcSheet(){const c=calc(draft);$('avgOut').textContent=c.qty>0?fmt(draft.market,c.avg):'—';$('qtyOut').textContent=qtyStr(c.qty);}
 
 $('mkKr').addEventListener('click',()=>{readSheet();draft.market='kr';setMktUI();recalcSheet();});
 $('mkUs').addEventListener('click',()=>{readSheet();draft.market='us';setMktUI();recalcSheet();});
 $('addLot').addEventListener('click',()=>{readSheet();draft.lots.push({date:todayStr(),price:'',qty:''});renderLots();recalcSheet();});
-$('f-name').addEventListener('input',readSheet);
+// 종목코드 입력 시 자동 완성 및 주가 자동 조회 로직
+async function autoFetchStockInfo(code) {
+  let target = '';
+  if (window.location.protocol === 'file:') {
+    if (/^[0-9]{6}$/.test(code)) {
+      target = PROXY + encodeURIComponent(`https://polling.finance.naver.com/api/realtime?query=SERVICE_ITEM:${code}`);
+    } else {
+      target = PROXY + encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(code)}?range=1d&interval=1d`);
+    }
+  } else {
+    target = `/api/search?code=${encodeURIComponent(code)}`;
+  }
+
+  try {
+    const res = await fetch(target);
+    if (res.ok) {
+      const raw = await res.json();
+      let data = {};
+      
+      if (window.location.protocol === 'file:') {
+        if (/^[0-9]{6}$/.test(code)) {
+          const item = raw && raw.result && raw.result.areas && raw.result.areas[0] && raw.result.areas[0].datas && raw.result.areas[0].datas[0];
+          if (item) {
+            data = { market: 'kr', name: item.nm, ticker: code, cur: parseFloat(item.nv) };
+          }
+        } else {
+          const r = raw && raw.chart && raw.chart.result && raw.chart.result[0];
+          if (r && r.meta) {
+            data = { market: 'us', name: code.toUpperCase(), ticker: code.toUpperCase(), cur: r.meta.regularMarketPrice };
+          }
+        }
+      } else {
+        data = raw;
+      }
+
+      if (data.name && data.cur != null) {
+        $('f-name').value = data.name;
+        $('f-ticker').value = data.ticker;
+        $('f-cur').value = data.cur;
+        
+        draft.market = data.market;
+        setMktUI();
+        readSheet();
+        recalcSheet();
+      }
+    }
+  } catch (e) {
+    console.error('Failed to auto-fetch stock info:', e);
+  }
+}
+
+$('f-name').addEventListener('input', async () => {
+  readSheet();
+  const val = $('f-name').value.trim();
+  if (/^[0-9]{6}$/.test(val)) {
+    await autoFetchStockInfo(val);
+  }
+});
 $('f-owner').addEventListener('input',readSheet);
 $('f-broker').addEventListener('input',readSheet);
+$('f-ticker').addEventListener('change', async () => {
+  readSheet();
+  const val = $('f-ticker').value.trim();
+  if (val) {
+    await autoFetchStockInfo(val);
+  }
+});
 $('f-ticker').addEventListener('input',readSheet);
 $('f-cur').addEventListener('input',readSheet);
 
@@ -816,7 +880,7 @@ async function onSave(){
           owner: draft.owner,
           broker: draft.broker,
           ticker: draft.ticker,
-          cur: draft.cur,
+          cur: draft.cur === "" || draft.cur == null ? null : +draft.cur,
           lots: draft.lots
         })
         .eq('id', editingId);
@@ -831,7 +895,7 @@ async function onSave(){
           owner: draft.owner,
           broker: draft.broker,
           ticker: draft.ticker,
-          cur: draft.cur,
+          cur: draft.cur === "" || draft.cur == null ? null : +draft.cur,
           lots: draft.lots
         });
       if (error) throw error;
