@@ -284,10 +284,14 @@ header .date{font-size:.78rem;color:var(--ink-faint);font-weight:500;}
     <div class="field"><label>소유자</label><input id="f-owner" list="ownerList" type="text" placeholder="예) 나, 첫째" autocomplete="off"><datalist id="ownerList"></datalist></div>
   </div>
   <div class="row2">
+    <div class="field"><label>증권사</label><input id="f-broker" list="brokerList" type="text" placeholder="예) 키움증권, 삼성증권" autocomplete="off"><datalist id="brokerList"></datalist></div>
     <div class="field"><label>종목코드 / 티커 <span style="font-weight:500;color:var(--ink-faint)">(선택)</span></label>
       <input id="f-ticker" type="text" placeholder="예) 005930 / AAPL" autocomplete="off">
       <div class="sub" id="tickerHint">국내는 6자리 숫자, 미국은 영문 티커. 차트용입니다.</div></div>
+  </div>
+  <div class="row2">
     <div class="field"><label id="curLabel">현재가</label><input id="f-cur" type="number" inputmode="decimal" placeholder="0"></div>
+    <div class="field" style="visibility:hidden"></div>
   </div>
   <div class="lots-head"><label>매수 내역 (나눠 산 건 줄을 추가하세요)</label><button class="add-lot" id="addLot">＋ 매수 추가</button></div>
   <div id="lots"></div>
@@ -601,7 +605,7 @@ function render(){
   list.innerHTML=mine.map((p,i)=>{
     const c=calc(p);
     return `<div class="holding" data-id="${p.id}" style="animation-delay:${i*45}ms">
-      <div class="h-main"><span class="h-owner">${esc(ownerOf(p))}</span>
+      <div class="h-main"><span class="h-owner">${esc(ownerOf(p))}${p.broker ? ' · ' + esc(p.broker) : ''}</span>
       <div class="h-name">${esc(p.name)}</div>
       <div class="h-meta">${qtyStr(c.qty)}주 · 평균 ${dmoney(c.avg)} · 현재 ${dmoney(+p.cur||0)}</div></div>
       <div class="h-right"><div class="h-eval">${dmoney(c.ev)}</div>
@@ -699,7 +703,7 @@ function renderDetail(){
   const p=positions.find(x=>x.id===detailId); if(!p)return;
   const c=calc(p);
   $('dTitle').textContent=p.name;
-  $('dOwner').textContent=ownerOf(p)+(p.ticker?(' · '+p.ticker):'');
+  $('dOwner').textContent=ownerOf(p)+(p.broker?(' · '+p.broker):'')+(p.ticker?(' · '+p.ticker):'');
   document.querySelectorAll('.range-toggle button').forEach(b=>b.classList.toggle('on',b.dataset.r===detailRange));
   $('dStats').innerHTML=`
     <div class="dstat"><div class="l">보유 수량</div><div class="v">${qtyStr(c.qty)}주</div></div>
@@ -727,6 +731,10 @@ function fillOwnerList(){
   const all=[...new Set(positions.map(ownerOf).filter(o=>o!=='미지정'))].sort((a,b)=>a.localeCompare(b,'ko'));
   $('ownerList').innerHTML=all.map(o=>`<option value="${esc(o)}">`).join('');
 }
+function fillBrokerList(){
+  const all=[...new Set(positions.map(p=>p.broker).filter(b=>b&&b.trim()))].sort((a,b)=>a.localeCompare(b,'ko'));
+  $('brokerList').innerHTML=all.map(b=>`<option value="${esc(b)}">`).join('');
+}
 function setMktUI(){
   $('mkKr').classList.toggle('on',draft.market==='kr');
   $('mkUs').classList.toggle('on',draft.market==='us');
@@ -735,17 +743,17 @@ function setMktUI(){
   $('f-ticker').placeholder=draft.market==='us'?'예) AAPL':'예) 005930';
 }
 function openSheet(id){
-  editingId=id||null; fillOwnerList();
+  editingId=id||null; fillOwnerList(); fillBrokerList();
   if(editingId){
     const p=positions.find(x=>x.id===editingId);
     draft=JSON.parse(JSON.stringify(p));
     if(!draft.lots||!draft.lots.length)draft.lots=[{date:todayStr(),price:'',qty:''}];
     $('sheetTitle').textContent='종목 수정'; $('deleteBtn').style.display='';
   }else{
-    draft={market:activeTab,name:'',owner:(ownerFilter||''),ticker:'',cur:'',lots:[{date:todayStr(),price:'',qty:''}]};
+    draft={market:activeTab,name:'',owner:(ownerFilter||''),broker:'',ticker:'',cur:'',lots:[{date:todayStr(),price:'',qty:''}]};
     $('sheetTitle').textContent='종목 추가'; $('deleteBtn').style.display='none';
   }
-  $('f-name').value=draft.name; $('f-owner').value=draft.owner||''; $('f-ticker').value=draft.ticker||''; $('f-cur').value=draft.cur;
+  $('f-name').value=draft.name; $('f-owner').value=draft.owner||''; $('f-broker').value=draft.broker||''; $('f-ticker').value=draft.ticker||''; $('f-cur').value=draft.cur;
   setMktUI(); renderLots(); recalcSheet();
   $('detail').classList.remove('on');
   $('scrim').classList.add('on'); $('sheet').classList.add('on');
@@ -770,6 +778,7 @@ function renderLots(){
 }
 function readSheet(){
   draft.name=$('f-name').value.trim(); draft.owner=$('f-owner').value.trim();
+  draft.broker=$('f-broker').value.trim();
   draft.ticker=$('f-ticker').value.trim(); draft.cur=$('f-cur').value;
   draft.lots=Array.from($('lots').querySelectorAll('.lot')).map(r=>({
     date:r.querySelector('.lot-date').value,
@@ -783,6 +792,7 @@ $('mkUs').addEventListener('click',()=>{readSheet();draft.market='us';setMktUI()
 $('addLot').addEventListener('click',()=>{readSheet();draft.lots.push({date:todayStr(),price:'',qty:''});renderLots();recalcSheet();});
 $('f-name').addEventListener('input',readSheet);
 $('f-owner').addEventListener('input',readSheet);
+$('f-broker').addEventListener('input',readSheet);
 $('f-ticker').addEventListener('input',readSheet);
 $('f-cur').addEventListener('input',readSheet);
 
@@ -804,6 +814,7 @@ async function onSave(){
           market: draft.market,
           name: draft.name,
           owner: draft.owner,
+          broker: draft.broker,
           ticker: draft.ticker,
           cur: draft.cur,
           lots: draft.lots
@@ -818,6 +829,7 @@ async function onSave(){
           market: draft.market,
           name: draft.name,
           owner: draft.owner,
+          broker: draft.broker,
           ticker: draft.ticker,
           cur: draft.cur,
           lots: draft.lots
@@ -896,6 +908,7 @@ $('importFile').addEventListener('change',e=>{
         market: p.market,
         name: p.name,
         owner: p.owner || '',
+        broker: p.broker || '',
         ticker: p.ticker || '',
         cur: p.cur || 0,
         lots: p.lots || []
