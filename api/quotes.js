@@ -16,25 +16,28 @@ export default async function handler(req, res) {
     const krTickers = kr.split(',').map(t => t.trim()).filter(Boolean);
     if (krTickers.length > 0) {
       try {
-        const query = krTickers.map(t => `SERVICE_ITEM:${t}`).join(',');
-        const url = `https://polling.finance.naver.com/api/realtime?query=${query}`;
-        const response = await fetch(url);
-        if (response.ok) {
-          const buffer = await response.arrayBuffer();
-          const decoder = new TextDecoder('euc-kr');
-          const text = decoder.decode(buffer);
-          const data = JSON.parse(text);
-          const datas = data && data.result && data.result.areas && data.result.areas[0] && data.result.areas[0].datas;
-          
-          if (Array.isArray(datas)) {
-            datas.forEach(item => {
-              results[item.cd] = {
-                cur: parseFloat(item.nv), // 현재가
-                changePercent: parseFloat(item.cr) // 전일대비 등락율
-              };
-            });
+        const krPromises = krTickers.map(async (ticker) => {
+          try {
+            const url = `https://polling.finance.naver.com/api/realtime?query=SERVICE_ITEM:${ticker}`;
+            const response = await fetch(url);
+            if (response.ok) {
+              const buffer = await response.arrayBuffer();
+              const decoder = new TextDecoder('euc-kr');
+              const text = decoder.decode(buffer);
+              const data = JSON.parse(text);
+              const item = data && data.result && data.result.areas && data.result.areas[0] && data.result.areas[0].datas && data.result.areas[0].datas[0];
+              if (item) {
+                results[ticker] = {
+                  cur: parseFloat(item.nv), // 현재가
+                  changePercent: parseFloat(item.cr) // 전일대비 등락율
+                };
+              }
+            }
+          } catch (e) {
+            console.error(`Failed to fetch KR quote for ${ticker}:`, e);
           }
-        }
+        });
+        await Promise.all(krPromises);
       } catch (e) {
         console.error('Failed to batch fetch KR quotes:', e);
       }

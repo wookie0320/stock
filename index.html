@@ -660,25 +660,25 @@ async function fetchRealtimeQuotes() {
   const results = {};
   if (window.location.protocol === 'file:') {
     if (krTickers.length > 0) {
-      try {
-        const query = krTickers.map(t => `SERVICE_ITEM:${t}`).join(',');
-        const url = PROXY + encodeURIComponent(`https://polling.finance.naver.com/api/realtime?query=${query}`);
-        const res = await fetch(url);
-        if (res.ok) {
-          const raw = await res.json();
-          const datas = raw && raw.result && raw.result.areas && raw.result.areas[0] && raw.result.areas[0].datas;
-          if (Array.isArray(datas)) {
-            datas.forEach(item => {
-              results[item.cd] = {
+      const krPromises = krTickers.map(async (ticker) => {
+        try {
+          const url = PROXY + encodeURIComponent(`https://polling.finance.naver.com/api/realtime?query=SERVICE_ITEM:${ticker}`);
+          const res = await fetch(url);
+          if (res.ok) {
+            const raw = await res.json();
+            const item = raw && raw.result && raw.result.areas && raw.result.areas[0] && raw.result.areas[0].datas && raw.result.areas[0].datas[0];
+            if (item) {
+              results[ticker] = {
                 cur: parseFloat(item.nv),
                 changePercent: parseFloat(item.cr)
               };
-            });
+            }
           }
+        } catch (e) {
+          console.error(`Local KR quote fetch failed for ${ticker}:`, e);
         }
-      } catch (e) {
-        console.error('Local KR quote fetch failed:', e);
-      }
+      });
+      await Promise.all(krPromises);
     }
     if (usTickers.length > 0) {
       try {
