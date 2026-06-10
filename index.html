@@ -809,24 +809,27 @@ async function fetchRealtimeQuotes() {
       await Promise.all(krPromises);
     }
     if (usTickers.length > 0) {
-      try {
-        const url = PROXY + encodeURIComponent(`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${usTickers.join(',')}`);
-        const res = await fetch(url);
-        if (res.ok) {
-          const data = await res.json();
-          const list = data && data.quoteResponse && data.quoteResponse.result;
-          if (Array.isArray(list)) {
-            list.forEach(item => {
-              results[item.symbol] = {
-                cur: item.regularMarketPrice,
-                changePercent: item.regularMarketChangePercent
+      const usPromises = usTickers.map(async (ticker) => {
+        try {
+          const url = PROXY + encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?range=1d&interval=1d`);
+          const res = await fetch(url);
+          if (res.ok) {
+            const data = await res.json();
+            const meta = data && data.chart && data.chart.result && data.chart.result[0] && data.chart.result[0].meta;
+            if (meta) {
+              const cur = meta.regularMarketPrice;
+              const prev = meta.chartPreviousClose;
+              results[ticker] = {
+                cur: cur,
+                changePercent: prev ? ((cur - prev) / prev) * 100 : 0
               };
-            });
+            }
           }
+        } catch (e) {
+          console.error(`Local US quote fetch failed for ${ticker}:`, e);
         }
-      } catch (e) {
-        console.error('Local US quote fetch failed:', e);
-      }
+      });
+      await Promise.all(usPromises);
     }
     applyQuotes(results);
   } else {

@@ -49,24 +49,31 @@ export default async function handler(req, res) {
     const usTickers = us.split(',').map(t => t.trim().toUpperCase()).filter(Boolean);
     if (usTickers.length > 0) {
       try {
-        const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${usTickers.join(',')}`;
-        const response = await fetch(url, {
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        const usPromises = usTickers.map(async (ticker) => {
+          try {
+            const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?range=1d&interval=1d`;
+            const response = await fetch(url, {
+              headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+              }
+            });
+            if (response.ok) {
+              const data = await response.json();
+              const meta = data && data.chart && data.chart.result && data.chart.result[0] && data.chart.result[0].meta;
+              if (meta) {
+                const cur = meta.regularMarketPrice;
+                const prev = meta.chartPreviousClose;
+                results[ticker] = {
+                  cur: cur,
+                  changePercent: prev ? ((cur - prev) / prev) * 100 : 0
+                };
+              }
+            }
+          } catch (e) {
+            console.error(`Failed to fetch US quote for ${ticker}:`, e);
           }
         });
-        if (response.ok) {
-          const data = await response.json();
-          const list = data && data.quoteResponse && data.quoteResponse.result;
-          if (Array.isArray(list)) {
-            list.forEach(item => {
-              results[item.symbol] = {
-                cur: item.regularMarketPrice, // 현재가
-                changePercent: item.regularMarketChangePercent // 전일대비 등락율
-              };
-            });
-          }
-        }
+        await Promise.all(usPromises);
       } catch (e) {
         console.error('Failed to batch fetch US quotes:', e);
       }
