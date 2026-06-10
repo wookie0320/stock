@@ -59,7 +59,7 @@ export default async function handler(req, res) {
       if (r && r.meta) {
         return res.status(200).json({
           market: 'us',
-          name: cleanCode.toUpperCase(),
+          name: r.meta.shortName || r.meta.longName || cleanCode.toUpperCase(),
           ticker: cleanCode.toUpperCase(),
           cur: r.meta.regularMarketPrice
         });

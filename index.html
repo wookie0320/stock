@@ -919,7 +919,7 @@ async function autoFetchStockInfo(code) {
         } else {
           const r = raw && raw.chart && raw.chart.result && raw.chart.result[0];
           if (r && r.meta) {
-            data = { market: 'us', name: code.toUpperCase(), ticker: code.toUpperCase(), cur: r.meta.regularMarketPrice };
+            data = { market: 'us', name: r.meta.shortName || r.meta.longName || code.toUpperCase(), ticker: code.toUpperCase(), cur: r.meta.regularMarketPrice };
           }
         }
       } else {
