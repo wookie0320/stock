@@ -21,13 +21,19 @@ export default async function handler(req, res) {
       const url = `https://polling.finance.naver.com/api/realtime?query=SERVICE_ITEM:${cleanCode}`;
       const response = await fetch(url);
       if (response.ok) {
-        const data = await response.json();
+        // 네이버 실시간 API는 EUC-KR(또는 CP949) 인코딩을 사용하므로,
+        // 깨짐을 방지하기 위해 arrayBuffer로 받아 euc-kr TextDecoder로 디코딩합니다.
+        const buffer = await response.arrayBuffer();
+        const decoder = new TextDecoder('euc-kr');
+        const text = decoder.decode(buffer);
+        const data = JSON.parse(text);
+        
         const item = data && data.result && data.result.areas && data.result.areas[0] && data.result.areas[0].datas && data.result.areas[0].datas[0];
         
         if (item) {
           return res.status(200).json({
             market: 'kr',
-            name: item.nm, // 종목명
+            name: item.nm, // 한글 종목명
             ticker: cleanCode,
             cur: parseFloat(item.nv) // 현재가
           });
@@ -53,9 +59,9 @@ export default async function handler(req, res) {
       if (r && r.meta) {
         return res.status(200).json({
           market: 'us',
-          name: cleanCode.toUpperCase(), // 미국 주식명은 일단 티커 대문자로 처리
+          name: cleanCode.toUpperCase(),
           ticker: cleanCode.toUpperCase(),
-          cur: r.meta.regularMarketPrice // 현재가
+          cur: r.meta.regularMarketPrice
         });
       }
     }
