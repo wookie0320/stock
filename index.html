@@ -781,8 +781,8 @@ $('fxRefresh').addEventListener('click',fetchFx);
 
 // ---- 실시간 주가 등락율 조회 ----
 async function fetchRealtimeQuotes() {
-  const krTickers = positions.filter(p => p.market === 'kr' && p.ticker).map(p => p.ticker);
-  const usTickers = positions.filter(p => p.market === 'us' && p.ticker).map(p => p.ticker);
+  const krTickers = positions.filter(p => p.market === 'kr' && p.ticker).map(p => p.ticker.trim());
+  const usTickers = positions.filter(p => p.market === 'us' && p.ticker).map(p => p.ticker.trim().toUpperCase());
   if (krTickers.length === 0 && usTickers.length === 0) return;
 
   const results = {};
@@ -848,8 +848,13 @@ async function fetchRealtimeQuotes() {
 }
 
 function applyQuotes(results) {
+  const lookup = {};
+  for (const k in results) {
+    if (results[k]) lookup[k.toUpperCase()] = results[k];
+  }
   positions.forEach(p => {
-    const q = results[p.ticker];
+    if (!p.ticker) return;
+    const q = lookup[p.ticker.toUpperCase()];
     if (q) {
       p.cur = q.cur;
       p.changePercent = q.changePercent;
