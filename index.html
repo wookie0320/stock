@@ -74,7 +74,9 @@ header .date{font-size:.78rem;color:var(--ink-faint);font-weight:500;}
 .sum-cell .v{font-size:1.02rem;font-weight:700;}
 
 .list-head{display:flex;align-items:center;justify-content:space-between;margin:26px 4px 12px;}
-.list-head h2{font-size:.92rem;font-weight:700;margin:0;color:var(--ink-soft);}
+.list-head h2{font-size:.92rem;font-weight:700;margin:0;color:var(--ink-faint);cursor:pointer;transition:color .15s;}
+.list-head h2.on{color:var(--ink);position:relative;}
+.list-head h2.on::after{content:'';position:absolute;left:0;right:0;bottom:-4px;height:2px;background:var(--ink);border-radius:99px;}
 .list-head .count{font-size:.78rem;color:var(--ink-faint);font-weight:600;}
 
 .holding{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:15px 16px;margin-bottom:10px;
@@ -240,17 +242,23 @@ header .date{font-size:.78rem;color:var(--ink-faint);font-weight:500;}
 
   <section class="summary">
     <div class="sum-hero">
-      <div class="lbl">평가 손익</div>
+      <div class="lbl" id="heroLabel">평가 손익</div>
       <div class="val" id="totalPL">0원</div>
       <div class="sub" id="totalRate">0.00%</div>
     </div>
     <div class="sum-grid">
-      <div class="sum-cell"><div class="lbl">총 매수금액</div><div class="v" id="totalBuy">0원</div></div>
-      <div class="sum-cell"><div class="lbl">총 평가금액</div><div class="v" id="totalEval">0원</div></div>
+      <div class="sum-cell"><div class="lbl" id="buyLabel">총 매수금액</div><div class="v" id="totalBuy">0원</div></div>
+      <div class="sum-cell"><div class="lbl" id="evalLabel">총 평가금액</div><div class="v" id="totalEval">0원</div></div>
     </div>
   </section>
 
-  <div class="list-head"><h2>보유 종목</h2><span class="count" id="count">0종목</span></div>
+  <div class="list-head">
+    <div style="display:flex;gap:16px;align-items:center;">
+      <h2 id="tabHoldings" class="on">보유 종목</h2>
+      <h2 id="tabHistory">매도 이력</h2>
+    </div>
+    <span class="count" id="count">0종목</span>
+  </div>
   <div id="list"></div>
 
   <div class="tools">
@@ -279,6 +287,7 @@ header .date{font-size:.78rem;color:var(--ink-faint);font-weight:500;}
   <div class="dstats" id="dStats"></div>
   <div class="sheet-actions">
     <button class="btn btn-ghost" id="dCloseBtn">닫기</button>
+    <button class="btn btn-danger" id="dSellBtn" style="flex:1;background:var(--down);color:white;border:none;">매도</button>
     <button class="btn btn-primary" id="dEditBtn">수정</button>
   </div>
 </div>
@@ -330,6 +339,27 @@ header .date{font-size:.78rem;color:var(--ink-faint);font-weight:500;}
     <button class="btn btn-danger" id="deleteBtn" style="display:none">삭제</button>
     <button class="btn btn-ghost" id="cancelBtn">취소</button>
     <button class="btn btn-primary" id="saveBtn">저장</button>
+  </div>
+</div>
+
+<!-- 매도 입력 -->
+<div class="sheet" id="sellSheet">
+  <div class="grip"></div>
+  <h3>종목 매도</h3>
+  <div class="d-owner" id="sStockName" style="margin-bottom:14px;font-weight:700;">종목명</div>
+  <div class="field">
+    <label>매도일</label>
+    <input id="s-date" type="date">
+  </div>
+  <div class="row2">
+    <div class="field"><label id="sellPriceLabel">매도단가</label><input id="s-price" type="number" inputmode="decimal" placeholder="0"></div>
+    <div class="field"><label>매도수량</label><input id="s-qty" type="number" inputmode="decimal" placeholder="0">
+      <div class="sub" id="maxSellQtyHint" style="font-weight:600;color:var(--ink-faint);">최대 0주 매도 가능</div></div>
+  </div>
+  <div class="avg-line" style="margin-bottom:18px;">예상 실현 손익: <b id="expectedProfit">—</b></div>
+  <div class="sheet-actions">
+    <button class="btn btn-ghost" id="sCancelBtn">취소</button>
+    <button class="btn btn-primary" id="sSaveBtn" style="background:var(--down);color:white;border:none;">매도 완료</button>
   </div>
 </div>
 
@@ -609,43 +639,111 @@ function renderOwners(){
   }));
 }
 
+let activeListTab = 'holdings';
+
 function render(){
   updateFxBar();
   renderOwners();
-  let mine=positions.filter(p=>p.market===activeTab);
-  if(ownerFilter!==null) mine=mine.filter(p=>ownerOf(p)===ownerFilter);
-  mine.sort((a,b)=>{const oa=ownerOf(a),ob=ownerOf(b);
-    if(oa!==ob)return oa==='미지정'?1:ob==='미지정'?-1:oa.localeCompare(ob,'ko');
-    return (a.name||'').localeCompare(b.name||'','ko');});
+  
+  $('tabHoldings').classList.toggle('on', activeListTab === 'holdings');
+  $('tabHistory').classList.toggle('on', activeListTab === 'history');
+  
+  if (activeListTab === 'holdings') {
+    $('heroLabel').textContent = '평가 손익';
+    $('buyLabel').textContent = '총 매수금액';
+    $('evalLabel').textContent = '총 평가금액';
 
-  let tBuy=0,tEval=0;
-  mine.forEach(p=>{const c=calc(p);tBuy+=c.buy;tEval+=c.ev;});
-  const tPL=tEval-tBuy, tRate=tBuy>0?tPL/tBuy*100:0;
-  $('totalPL').textContent=dsigned(tPL); $('totalPL').className='val '+cls(tPL);
-  $('totalRate').textContent=(tRate>0?'+':tRate<0?'−':'')+Math.abs(tRate).toFixed(2)+'%'; $('totalRate').className='sub '+cls(tPL);
-  $('totalBuy').textContent=dmoney(tBuy);
-  $('totalEval').textContent=dmoney(tEval);
-  $('count').textContent=mine.length+'종목';
+    let mine=positions.filter(p=>p.market===activeTab && calc(p).qty > 0);
+    if(ownerFilter!==null) mine=mine.filter(p=>ownerOf(p)===ownerFilter);
+    mine.sort((a,b)=>{const oa=ownerOf(a),ob=ownerOf(b);
+      if(oa!==ob)return oa==='미지정'?1:ob==='미지정'?-1:oa.localeCompare(ob,'ko');
+      return (a.name||'').localeCompare(b.name||'','ko');});
 
-  const list=$('list');
-  if(mine.length===0){
-    const nm=activeTab==='kr'?'국내':'미국';
-    list.innerHTML=`<div class="empty"><div class="big">📈</div><p><b>아직 ${nm} 종목이 없어요</b></p><p>아래 버튼으로 보유 종목을 추가해보세요</p></div>`;
-    return;
+    let tBuy=0,tEval=0;
+    mine.forEach(p=>{const c=calc(p);tBuy+=c.buy;tEval+=c.ev;});
+    const tPL=tEval-tBuy, tRate=tBuy>0?tPL/tBuy*100:0;
+    $('totalPL').textContent=dsigned(tPL); $('totalPL').className='val '+cls(tPL);
+    $('totalRate').textContent=(tRate>0?'+':tRate<0?'−':'')+Math.abs(tRate).toFixed(2)+'%'; $('totalRate').className='sub '+cls(tPL);
+    $('totalBuy').textContent=dmoney(tBuy);
+    $('totalEval').textContent=dmoney(tEval);
+    $('count').textContent=mine.length+'종목';
+
+    const list=$('list');
+    if(mine.length===0){
+      const nm=activeTab==='kr'?'국내':'미국';
+      list.innerHTML=`<div class="empty"><div class="big">📈</div><p><b>아직 ${nm} 보유 종목이 없어요</b></p><p>아래 버튼으로 보유 종목을 추가해보세요</p></div>`;
+      return;
+    }
+    list.innerHTML=mine.map((p,i)=>{
+      const c=calc(p);
+      const pct = p.changePercent;
+      const pctText = pct != null ? `<span class="${cls(pct)}" style="font-weight:700;font-size:0.75rem;margin-left:4px;">(${pct > 0 ? '+' : pct < 0 ? '−' : ''}${Math.abs(pct).toFixed(2)}%)</span>` : '';
+      return `<div class="holding" data-id="${p.id}" style="animation-delay:${i*45}ms">
+        <div class="h-main"><span class="h-owner">${esc(ownerOf(p))}${p.broker ? ' · ' + esc(p.broker) : ''}</span>
+        <div class="h-name">${esc(p.name)}</div>
+        <div class="h-meta">${qtyStr(c.qty)}주 · 평균 ${dmoney(c.avg)} · 현재 ${dmoney(+p.cur||0)}${pctText}</div></div>
+        <div class="h-right"><div class="h-eval">${dmoney(c.ev)}</div>
+        <div class="h-rate ${cls(c.pl)}">${(c.rate>0?'+':c.rate<0?'−':'')}${Math.abs(c.rate).toFixed(2)}% · ${dsigned(c.pl)}</div></div>
+      </div>`;
+    }).join('');
+    list.querySelectorAll('.holding').forEach(el=>el.addEventListener('click',()=>openDetail(el.dataset.id)));
+  } else {
+    $('heroLabel').textContent = '실현 손익';
+    $('buyLabel').textContent = '실현 매수금액';
+    $('evalLabel').textContent = '실현 매도금액';
+
+    let salesList = [];
+    positions.forEach(p => {
+      if (p.market === activeTab && p.sales && p.sales.length > 0) {
+        p.sales.forEach(s => {
+          salesList.push({
+            id: p.id,
+            name: p.name,
+            owner: p.owner,
+            broker: p.broker,
+            date: s.date,
+            price: s.price,
+            qty: s.qty,
+            buyAvg: s.buyAvg,
+            profit: (s.price - s.buyAvg) * s.qty,
+            rate: s.buyAvg > 0 ? ((s.price - s.buyAvg) / s.buyAvg) * 100 : 0
+          });
+        });
+      }
+    });
+    if(ownerFilter!==null) salesList=salesList.filter(s=>ownerOf(s)===ownerFilter);
+    salesList.sort((a,b)=>b.date.localeCompare(a.date));
+
+    let tRealBuy=0, tRealSell=0;
+    salesList.forEach(s=>{
+      tRealBuy += s.buyAvg * s.qty;
+      tRealSell += s.price * s.qty;
+    });
+    const tRealPL = tRealSell - tRealBuy;
+    const tRealRate = tRealBuy > 0 ? (tRealPL / tRealBuy) * 100 : 0;
+    
+    $('totalPL').textContent=dsigned(tRealPL); $('totalPL').className='val '+cls(tRealPL);
+    $('totalRate').textContent=(tRealRate>0?'+':tRealRate<0?'−':'')+Math.abs(tRealRate).toFixed(2)+'%'; $('totalRate').className='sub '+cls(tRealPL);
+    $('totalBuy').textContent=dmoney(tRealBuy);
+    $('totalEval').textContent=dmoney(tRealSell);
+    $('count').textContent=salesList.length+'건';
+
+    const list=$('list');
+    if(salesList.length===0){
+      list.innerHTML=`<div class="empty"><div class="big">💸</div><p><b>실현 손익 내역이 없습니다</b></p><p>보유 종목 상세 화면에서 매도를 진행해보세요</p></div>`;
+      return;
+    }
+    list.innerHTML=salesList.map((sale,i)=>{
+      return `<div class="holding" data-id="${sale.id}" style="animation-delay:${i*45}ms">
+        <div class="h-main"><span class="h-owner">${esc(ownerOf(sale))}${sale.broker ? ' · ' + esc(sale.broker) : ''} · ${sale.date} 매도</span>
+        <div class="h-name">${esc(sale.name)}</div>
+        <div class="h-meta">${qtyStr(sale.qty)}주 · 매수평균 ${dmoney(sale.buyAvg)} · 매도단가 ${dmoney(sale.price)}</div></div>
+        <div class="h-right"><div class="h-eval ${cls(sale.profit)}">${dsigned(sale.profit)}</div>
+        <div class="h-rate ${cls(sale.profit)}">${(sale.rate>0?'+':sale.rate<0?'−':'')}${Math.abs(sale.rate).toFixed(2)}%</div></div>
+      </div>`;
+    }).join('');
+    list.querySelectorAll('.holding').forEach(el=>el.addEventListener('click',()=>openDetail(el.dataset.id)));
   }
-  list.innerHTML=mine.map((p,i)=>{
-    const c=calc(p);
-    const pct = p.changePercent;
-    const pctText = pct != null ? `<span class="${cls(pct)}" style="font-weight:700;font-size:0.75rem;margin-left:4px;">(${pct > 0 ? '+' : pct < 0 ? '−' : ''}${Math.abs(pct).toFixed(2)}%)</span>` : '';
-    return `<div class="holding" data-id="${p.id}" style="animation-delay:${i*45}ms">
-      <div class="h-main"><span class="h-owner">${esc(ownerOf(p))}${p.broker ? ' · ' + esc(p.broker) : ''}</span>
-      <div class="h-name">${esc(p.name)}</div>
-      <div class="h-meta">${qtyStr(c.qty)}주 · 평균 ${dmoney(c.avg)} · 현재 ${dmoney(+p.cur||0)}${pctText}</div></div>
-      <div class="h-right"><div class="h-eval">${dmoney(c.ev)}</div>
-      <div class="h-rate ${cls(c.pl)}">${(c.rate>0?'+':c.rate<0?'−':'')}${Math.abs(c.rate).toFixed(2)}% · ${dsigned(c.pl)}</div></div>
-    </div>`;
-  }).join('');
-  list.querySelectorAll('.holding').forEach(el=>el.addEventListener('click',()=>openDetail(el.dataset.id)));
 }
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 
@@ -829,13 +927,18 @@ function renderDetail(){
 function openDetail(id){
   detailId=id; detailRange='3mo';
   $('sheet').classList.remove('on');
+  $('sellSheet').classList.remove('on');
   renderDetail();
   $('scrim').classList.add('on'); $('detail').classList.add('on');
+  
+  if (!history.state || !history.state.modalOpen) {
+    history.pushState({ modalOpen: true }, '');
+  }
 }
 document.querySelectorAll('.range-toggle button').forEach(b=>b.addEventListener('click',()=>{
   detailRange=b.dataset.r; renderDetail();
 }));
-$('dCloseBtn').addEventListener('click',closeSheets);
+$('dCloseBtn').addEventListener('click', closeSheets);
 $('dEditBtn').addEventListener('click',()=>{const id=detailId;$('detail').classList.remove('on');openSheet(id);});
 
 // ---- 추가/수정 ----
@@ -861,8 +964,96 @@ function openSheet(id){
   setMktUI(); renderLots(); recalcSheet();
   $('detail').classList.remove('on');
   $('scrim').classList.add('on'); $('sheet').classList.add('on');
+  
+  if (!history.state || !history.state.modalOpen) {
+    history.pushState({ modalOpen: true }, '');
+  }
 }
-function closeSheets(){$('scrim').classList.remove('on');$('sheet').classList.remove('on');$('detail').classList.remove('on');}
+function closeSheets(fromPopState = false){
+  $('scrim').classList.remove('on');
+  $('sheet').classList.remove('on');
+  $('detail').classList.remove('on');
+  $('sellSheet').classList.remove('on');
+  
+  if (fromPopState !== true) {
+    if (history.state && history.state.modalOpen) {
+      history.back();
+    }
+  }
+}
+
+// popstate 리스너 (모바일 뒤로가기 버튼 연동)
+window.addEventListener('popstate', (e) => {
+  if (!e.state || !e.state.modalOpen) {
+    closeSheets(true);
+  }
+});
+
+// ---- 매도 처리 로직 ----
+async function onSellSave() {
+  const sellPrice = parseFloat($('s-price').value) || 0;
+  const sellQty = parseFloat($('s-qty').value) || 0;
+  const sellDate = $('s-date').value;
+  
+  if (sellQty <= 0) { alert('매도 수량을 입력해 주세요.'); return; }
+  if (sellPrice <= 0) { alert('매도 단가를 입력해 주세요.'); return; }
+  if (!sellDate) { alert('매도일을 입력해 주세요.'); return; }
+
+  const p = positions.find(x => x.id === detailId);
+  if (!p) return;
+
+  const c = calc(p);
+  if (sellQty > c.qty) {
+    alert(`보유 수량(${qtyStr(c.qty)}주)보다 많은 수량을 매도할 수 없습니다.`);
+    return;
+  }
+
+  if(!dbClient || !user) {
+    alert('슈파베이스가 연동되어 있지 않거나 로그인 세션이 만료되었습니다.');
+    return;
+  }
+
+  try {
+    let remaining = sellQty;
+    let updatedLots = JSON.parse(JSON.stringify(p.lots || []));
+    for (let i = 0; i < updatedLots.length && remaining > 0; i++) {
+      const q = updatedLots[i].qty;
+      if (q <= remaining) {
+        remaining -= q;
+        updatedLots[i].qty = 0;
+      } else {
+        updatedLots[i].qty -= remaining;
+        remaining = 0;
+      }
+    }
+    updatedLots = updatedLots.filter(l => l.qty > 0);
+
+    const updatedSales = JSON.parse(JSON.stringify(p.sales || []));
+    updatedSales.push({
+      date: sellDate,
+      price: sellPrice,
+      qty: sellQty,
+      buyAvg: c.avg
+    });
+
+    const { error } = await dbClient
+      .from('stocks')
+      .update({
+        lots: updatedLots,
+        sales: updatedSales
+      })
+      .eq('id', p.id);
+
+    if (error) throw error;
+
+    await load();
+    render();
+    closeSheets();
+    alert('매도가 완료되었습니다.');
+  } catch (e) {
+    alert('매도 저장 실패: ' + e.message);
+  }
+}
 
 function renderLots(){
   $('lots').innerHTML=draft.lots.map((l,i)=>`
@@ -1046,6 +1237,47 @@ $('scrim').addEventListener('click',closeSheets);
 $('saveBtn').addEventListener('click',onSave);
 $('deleteBtn').addEventListener('click',onDelete);
 
+// 보유 종목 / 매도 이력 탭 리스너
+$('tabHoldings').addEventListener('click', () => { activeListTab = 'holdings'; render(); });
+$('tabHistory').addEventListener('click', () => { activeListTab = 'history'; render(); });
+
+// 매도 상세 이동 리스너
+$('dSellBtn').addEventListener('click', () => {
+  const p = positions.find(x => x.id === detailId);
+  if (!p) return;
+  
+  $('sStockName').textContent = p.name + ' (' + (p.ticker || '코드 없음') + ')';
+  $('s-date').value = todayStr();
+  $('s-price').value = p.cur || '';
+  $('s-qty').value = '';
+  
+  const c = calc(p);
+  $('maxSellQtyHint').textContent = `최대 ${qtyStr(c.qty)}주 매도 가능`;
+  $('expectedProfit').textContent = '—';
+  $('expectedProfit').className = 'flat';
+  
+  const recalcSell = () => {
+    const pr = parseFloat($('s-price').value) || 0;
+    const qty = parseFloat($('s-qty').value) || 0;
+    const profit = (pr - c.avg) * qty;
+    $('expectedProfit').textContent = dsigned(profit);
+    $('expectedProfit').className = cls(profit);
+  };
+  $('s-price').oninput = recalcSell;
+  $('s-qty').oninput = recalcSell;
+  
+  $('detail').classList.remove('on');
+  $('scrim').classList.add('on');
+  $('sellSheet').classList.add('on');
+  
+  if (!history.state || !history.state.modalOpen) {
+    history.pushState({ modalOpen: true }, '');
+  }
+});
+
+$('sCancelBtn').addEventListener('click', closeSheets);
+$('sSaveBtn').addEventListener('click', onSellSave);
+
 // ---- 백업 ----
 function doExport(){
   const data={app:'naju-stock',ver:2,exportedAt:new Date().toISOString(),positions,fx:{rate:fxRate,showKRW,auto:fxAuto,at:lastFxAt}};
@@ -1086,7 +1318,8 @@ $('importFile').addEventListener('change',e=>{
         broker: p.broker || '',
         ticker: p.ticker || '',
         cur: p.cur || 0,
-        lots: p.lots || []
+        lots: p.lots || [],
+        sales: p.sales || []
       }));
 
       if (newItems.length > 0) {
