@@ -15,8 +15,8 @@ export default async function handler(req, res) {
 
   const cleanCode = code.trim().replace(/[^0-9a-zA-Z]/g, '');
 
-  // 1. 만약 6자리 숫자라면 국내 주식(Naver real-time API)으로 간주하고 처리
-  if (/^[0-9]{6}$/.test(cleanCode)) {
+  // 1. 만약 6자리이면서 숫자로 시작하는 영숫자라면 국내 주식(Naver real-time API)으로 간주하고 처리
+  if (/^[0-9][0-9a-zA-Z]{5}$/.test(cleanCode)) {
     try {
       const url = `https://polling.finance.naver.com/api/realtime?query=SERVICE_ITEM:${cleanCode}`;
       const response = await fetch(url);

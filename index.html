@@ -137,6 +137,7 @@ header .date{font-size:.78rem;color:var(--ink-faint);font-weight:500;}
   font-size:1rem;font-family:inherit;color:var(--ink);outline:none;transition:border-color .15s;font-variant-numeric:tabular-nums;
   appearance:none; -webkit-appearance:none;}
 .field input:focus, .field select:focus{border-color:var(--ink);}
+#f-name, #f-cur {background:#ece7da;color:var(--ink-soft);}
 .field select {
   background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cpath%20d%3D%22M5%207.5L10%2012.5L15%207.5%22%20stroke%3D%22%235c5f68%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E");
   background-repeat: no-repeat;
@@ -151,7 +152,7 @@ header .date{font-size:.78rem;color:var(--ink-faint);font-weight:500;}
 .lots-head label{font-size:.78rem;font-weight:600;color:var(--ink-soft);}
 .add-lot{border:none;background:transparent;color:var(--ink);font-family:inherit;font-weight:700;font-size:.82rem;cursor:pointer;padding:4px 6px;}
 .lot{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:8px;}
-.lot input{width:100%;border:1px solid var(--line);background:var(--paper);border-radius:9px;padding:10px;
+.lot input{width:100%;border:1px solid var(--line);background:#ffffff;border-radius:9px;padding:10px;
   font-size:.92rem;font-family:inherit;color:var(--ink);outline:none;font-variant-numeric:tabular-nums;}
 .lot input:focus{border-color:var(--ink);}
 .lot .r1{margin-bottom:8px;}
@@ -892,7 +893,7 @@ $('addLot').addEventListener('click',()=>{readSheet();draft.lots.push({date:toda
 async function autoFetchStockInfo(code) {
   let target = '';
   if (window.location.protocol === 'file:') {
-    if (/^[0-9]{6}$/.test(code)) {
+    if (/^[0-9][0-9a-zA-Z]{5}$/.test(code)) {
       target = PROXY + encodeURIComponent(`https://polling.finance.naver.com/api/realtime?query=SERVICE_ITEM:${code}`);
     } else {
       target = PROXY + encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(code)}?range=1d&interval=1d`);
@@ -908,7 +909,7 @@ async function autoFetchStockInfo(code) {
       let data = {};
       
       if (window.location.protocol === 'file:') {
-        if (/^[0-9]{6}$/.test(code)) {
+        if (/^[0-9][0-9a-zA-Z]{5}$/.test(code)) {
           const item = raw && raw.result && raw.result.areas && raw.result.areas[0] && raw.result.areas[0].datas && raw.result.areas[0].datas[0];
           if (item) {
             data = { market: 'kr', name: item.nm, ticker: code, cur: parseFloat(item.nv) };
@@ -942,7 +943,7 @@ async function autoFetchStockInfo(code) {
 $('f-name').addEventListener('input', async () => {
   readSheet();
   const val = $('f-name').value.trim();
-  if (/^[0-9]{6}$/.test(val)) {
+  if (/^[0-9][0-9a-zA-Z]{5}$/.test(val)) {
     await autoFetchStockInfo(val);
   }
 });
@@ -951,14 +952,14 @@ $('f-broker').addEventListener('change',readSheet);
 $('f-ticker').addEventListener('input', async () => {
   readSheet();
   const val = $('f-ticker').value.trim();
-  if (/^[0-9]{6}$/.test(val)) {
+  if (/^[0-9][0-9a-zA-Z]{5}$/.test(val)) {
     await autoFetchStockInfo(val);
   }
 });
 $('f-ticker').addEventListener('change', async () => {
   readSheet();
   const val = $('f-ticker').value.trim();
-  if (val && !/^[0-9]{6}$/.test(val)) {
+  if (val && !/^[0-9][0-9a-zA-Z]{5}$/.test(val)) {
     await autoFetchStockInfo(val);
   }
 });
