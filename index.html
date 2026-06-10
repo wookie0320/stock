@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon-192.png">
 <title>내 주식</title>
 <!-- 슈파베이스 CDN 로드 -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1117,6 +1120,13 @@ $('importFile').addEventListener('change',e=>{
         fetchRealtimeQuotes();
       }
     }, 60000);
+  }
+
+  // 서비스 워커 등록 (PWA 설치 가능하도록)
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch(e => console.error('SW reg fail:', e));
+    });
   }
 })();
 </script>
