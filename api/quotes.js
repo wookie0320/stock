@@ -1,0 +1,74 @@
+export default async function handler(req, res) {
+  // CORS Headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  const { kr, us } = req.query;
+  const results = {};
+
+  // 1. 국내 주식 실시간 시세 조회 (Naver API - EUC-KR 디코딩)
+  if (kr) {
+    const krTickers = kr.split(',').map(t => t.trim()).filter(Boolean);
+    if (krTickers.length > 0) {
+      try {
+        const query = krTickers.map(t => `SERVICE_ITEM:${t}`).join(',');
+        const url = `https://polling.finance.naver.com/api/realtime?query=${query}`;
+        const response = await fetch(url);
+        if (response.ok) {
+          const buffer = await response.arrayBuffer();
+          const decoder = new TextDecoder('euc-kr');
+          const text = decoder.decode(buffer);
+          const data = JSON.parse(text);
+          const datas = data && data.result && data.result.areas && data.result.areas[0] && data.result.areas[0].datas;
+          
+          if (Array.isArray(datas)) {
+            datas.forEach(item => {
+              results[item.cd] = {
+                cur: parseFloat(item.nv), // 현재가
+                changePercent: parseFloat(item.cr) // 전일대비 등락율
+              };
+            });
+          }
+        }
+      } catch (e) {
+        console.error('Failed to batch fetch KR quotes:', e);
+      }
+    }
+  }
+
+  // 2. 미국 주식 실시간 시세 조회 (Yahoo Finance API)
+  if (us) {
+    const usTickers = us.split(',').map(t => t.trim().toUpperCase()).filter(Boolean);
+    if (usTickers.length > 0) {
+      try {
+        const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${usTickers.join(',')}`;
+        const response = await fetch(url, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+          }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          const list = data && data.quoteResponse && data.quoteResponse.result;
+          if (Array.isArray(list)) {
+            list.forEach(item => {
+              results[item.symbol] = {
+                cur: item.regularMarketPrice, // 현재가
+                changePercent: item.regularMarketChangePercent // 전일대비 등락율
+              };
+            });
+          }
+        }
+      } catch (e) {
+        console.error('Failed to batch fetch US quotes:', e);
+      }
+    }
+  }
+
+  return res.status(200).json(results);
+}

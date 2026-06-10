@@ -459,6 +459,7 @@ async function checkSession() {
     await load();
     render();
     fetchFx();
+    fetchRealtimeQuotes();
   } else {
     user = null;
     $('authScreen').style.display = 'flex';
@@ -628,10 +629,12 @@ function render(){
   }
   list.innerHTML=mine.map((p,i)=>{
     const c=calc(p);
+    const pct = p.changePercent;
+    const pctText = pct != null ? `<span class="${cls(pct)}" style="font-weight:700;font-size:0.75rem;margin-left:4px;">(${pct > 0 ? '+' : pct < 0 ? '−' : ''}${Math.abs(pct).toFixed(2)}%)</span>` : '';
     return `<div class="holding" data-id="${p.id}" style="animation-delay:${i*45}ms">
       <div class="h-main"><span class="h-owner">${esc(ownerOf(p))}${p.broker ? ' · ' + esc(p.broker) : ''}</span>
       <div class="h-name">${esc(p.name)}</div>
-      <div class="h-meta">${qtyStr(c.qty)}주 · 평균 ${dmoney(c.avg)} · 현재 ${dmoney(+p.cur||0)}</div></div>
+      <div class="h-meta">${qtyStr(c.qty)}주 · 평균 ${dmoney(c.avg)} · 현재 ${dmoney(+p.cur||0)}${pctText}</div></div>
       <div class="h-right"><div class="h-eval">${dmoney(c.ev)}</div>
       <div class="h-rate ${cls(c.pl)}">${(c.rate>0?'+':c.rate<0?'−':'')}${Math.abs(c.rate).toFixed(2)}% · ${dsigned(c.pl)}</div></div>
     </div>`;
@@ -647,6 +650,85 @@ document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
 $('fxInput').addEventListener('input',()=>{const v=parseFloat($('fxInput').value);if(v>0){fxRate=v;fxAuto=false;setFxStatus('직접 입력한 값');saveFx();render();}});
 $('krwToggle').addEventListener('change',()=>{showKRW=$('krwToggle').checked;saveFx();render();});
 $('fxRefresh').addEventListener('click',fetchFx);
+
+// ---- 실시간 주가 등락율 조회 ----
+async function fetchRealtimeQuotes() {
+  const krTickers = positions.filter(p => p.market === 'kr' && p.ticker).map(p => p.ticker);
+  const usTickers = positions.filter(p => p.market === 'us' && p.ticker).map(p => p.ticker);
+  if (krTickers.length === 0 && usTickers.length === 0) return;
+
+  const results = {};
+  if (window.location.protocol === 'file:') {
+    if (krTickers.length > 0) {
+      try {
+        const query = krTickers.map(t => `SERVICE_ITEM:${t}`).join(',');
+        const url = PROXY + encodeURIComponent(`https://polling.finance.naver.com/api/realtime?query=${query}`);
+        const res = await fetch(url);
+        if (res.ok) {
+          const raw = await res.json();
+          const datas = raw && raw.result && raw.result.areas && raw.result.areas[0] && raw.result.areas[0].datas;
+          if (Array.isArray(datas)) {
+            datas.forEach(item => {
+              results[item.cd] = {
+                cur: parseFloat(item.nv),
+                changePercent: parseFloat(item.cr)
+              };
+            });
+          }
+        }
+      } catch (e) {
+        console.error('Local KR quote fetch failed:', e);
+      }
+    }
+    if (usTickers.length > 0) {
+      try {
+        const url = PROXY + encodeURIComponent(`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${usTickers.join(',')}`);
+        const res = await fetch(url);
+        if (res.ok) {
+          const data = await res.json();
+          const list = data && data.quoteResponse && data.quoteResponse.result;
+          if (Array.isArray(list)) {
+            list.forEach(item => {
+              results[item.symbol] = {
+                cur: item.regularMarketPrice,
+                changePercent: item.regularMarketChangePercent
+              };
+            });
+          }
+        }
+      } catch (e) {
+        console.error('Local US quote fetch failed:', e);
+      }
+    }
+    applyQuotes(results);
+  } else {
+    const params = [];
+    if (krTickers.length > 0) params.push(`kr=${encodeURIComponent(krTickers.join(','))}`);
+    if (usTickers.length > 0) params.push(`us=${encodeURIComponent(usTickers.join(','))}`);
+    const target = `/api/quotes?${params.join('&')}`;
+
+    try {
+      const res = await fetch(target);
+      if (res.ok) {
+        const data = await res.json();
+        applyQuotes(data);
+      }
+    } catch (e) {
+      console.error('Vercel quote fetch failed:', e);
+    }
+  }
+}
+
+function applyQuotes(results) {
+  positions.forEach(p => {
+    const q = results[p.ticker];
+    if (q) {
+      p.cur = q.cur;
+      p.changePercent = q.changePercent;
+    }
+  });
+  render();
+}
 
 // ---- 주가 차트 ----
 function candidateSymbols(p){
@@ -928,6 +1010,7 @@ async function onSave(){
     activeTab=draft.market; ownerFilter=null;
     document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.mkt===activeTab));
     render();closeSheets();
+    fetchRealtimeQuotes();
   } catch (e) {
     alert('데이터 저장 실패: ' + e.message);
   }
@@ -1010,6 +1093,7 @@ $('importFile').addEventListener('change',e=>{
       await load();
       render();
       alert('성공적으로 불러왔습니다! 이제 모든 기기에서 동기화됩니다.');
+      fetchRealtimeQuotes();
     }catch(err){ alert('백업 파일을 불러오지 못했습니다. 파일 구조를 확인해주세요: ' + err.message); }
     $('importFile').value='';
   };
