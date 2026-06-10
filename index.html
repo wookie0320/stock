@@ -133,9 +133,17 @@ header .date{font-size:.78rem;color:var(--ink-faint);font-weight:500;}
 
 .field{margin-bottom:14px;}
 .field label{display:block;font-size:.78rem;font-weight:600;color:var(--ink-soft);margin-bottom:6px;}
-.field input{width:100%;border:1px solid var(--line);background:var(--card);border-radius:12px;padding:13px 14px;
-  font-size:1rem;font-family:inherit;color:var(--ink);outline:none;transition:border-color .15s;font-variant-numeric:tabular-nums;}
-.field input:focus{border-color:var(--ink);}
+.field input, .field select{width:100%;border:1px solid var(--line);background:var(--card);border-radius:12px;padding:13px 14px;
+  font-size:1rem;font-family:inherit;color:var(--ink);outline:none;transition:border-color .15s;font-variant-numeric:tabular-nums;
+  appearance:none; -webkit-appearance:none;}
+.field input:focus, .field select:focus{border-color:var(--ink);}
+.field select {
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cpath%20d%3D%22M5%207.5L10%2012.5L15%207.5%22%20stroke%3D%22%235c5f68%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 16px;
+  padding-right: 36px;
+}
 .field .sub{font-size:.7rem;color:var(--ink-faint);font-weight:500;margin-top:5px;}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 
@@ -286,8 +294,24 @@ header .date{font-size:.78rem;color:var(--ink-faint);font-weight:500;}
     <div class="field"><label>종목명</label><input id="f-name" type="text" placeholder="예) 삼성전자" autocomplete="off"></div>
   </div>
   <div class="row2">
-    <div class="field"><label>소유자</label><input id="f-owner" list="ownerList" type="text" placeholder="예) 나, 첫째" autocomplete="off"><datalist id="ownerList"></datalist></div>
-    <div class="field"><label>증권사</label><input id="f-broker" list="brokerList" type="text" placeholder="예) 한국투자, 신한투자" autocomplete="off"><datalist id="brokerList"></datalist></div>
+    <div class="field">
+      <label>소유자</label>
+      <select id="f-owner">
+        <option value="">선택 안 함</option>
+        <option value="구동욱">구동욱</option>
+        <option value="구단아">구단아</option>
+        <option value="구단희">구단희</option>
+        <option value="구도희">구도희</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>증권사</label>
+      <select id="f-broker">
+        <option value="">선택 안 함</option>
+        <option value="한국투자">한국투자</option>
+        <option value="신한투자">신한투자</option>
+      </select>
+    </div>
   </div>
   <div class="row2">
     <div class="field"><label id="curLabel">현재가</label><input id="f-cur" type="number" inputmode="decimal" placeholder="0"></div>
@@ -727,14 +751,6 @@ $('dCloseBtn').addEventListener('click',closeSheets);
 $('dEditBtn').addEventListener('click',()=>{const id=detailId;$('detail').classList.remove('on');openSheet(id);});
 
 // ---- 추가/수정 ----
-function fillOwnerList(){
-  const all=[...new Set(positions.map(ownerOf).filter(o=>o!=='미지정'))].sort((a,b)=>a.localeCompare(b,'ko'));
-  $('ownerList').innerHTML=all.map(o=>`<option value="${esc(o)}">`).join('');
-}
-function fillBrokerList(){
-  const all=[...new Set(positions.map(p=>p.broker).filter(b=>b&&b.trim()))].sort((a,b)=>a.localeCompare(b,'ko'));
-  $('brokerList').innerHTML=all.map(b=>`<option value="${esc(b)}">`).join('');
-}
 function setMktUI(){
   $('mkKr').classList.toggle('on',draft.market==='kr');
   $('mkUs').classList.toggle('on',draft.market==='us');
@@ -743,7 +759,7 @@ function setMktUI(){
   $('f-ticker').placeholder=draft.market==='us'?'예) AAPL':'예) 005930';
 }
 function openSheet(id){
-  editingId=id||null; fillOwnerList(); fillBrokerList();
+  editingId=id||null;
   if(editingId){
     const p=positions.find(x=>x.id===editingId);
     draft=JSON.parse(JSON.stringify(p));
@@ -848,8 +864,8 @@ $('f-name').addEventListener('input', async () => {
     await autoFetchStockInfo(val);
   }
 });
-$('f-owner').addEventListener('input',readSheet);
-$('f-broker').addEventListener('input',readSheet);
+$('f-owner').addEventListener('change',readSheet);
+$('f-broker').addEventListener('change',readSheet);
 $('f-ticker').addEventListener('input', async () => {
   readSheet();
   const val = $('f-ticker').value.trim();
