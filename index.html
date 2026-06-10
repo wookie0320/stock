@@ -311,6 +311,8 @@ header .date{font-size:.78rem;color:var(--ink-faint);font-weight:500;}
         <option value="">선택 안 함</option>
         <option value="한국투자">한국투자</option>
         <option value="신한투자">신한투자</option>
+        <option value="대한이화">대한이화</option>
+        <option value="제이앤디">제이앤디</option>
       </select>
     </div>
   </div>
@@ -1108,6 +1110,13 @@ $('importFile').addEventListener('change',e=>{
   const isSetup = await initSupabase();
   if (isSetup) {
     await checkSession();
+
+    // 1분 간격 실시간 주가 자동 갱신 등록 (브라우저 탭이 활성화되어 있을 때만 작동)
+    setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        fetchRealtimeQuotes();
+      }
+    }, 60000);
   }
 })();
 </script>
