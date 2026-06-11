@@ -27,9 +27,13 @@ export default async function handler(req, res) {
               const data = JSON.parse(text);
               const item = data && data.result && data.result.areas && data.result.areas[0] && data.result.areas[0].datas && data.result.areas[0].datas[0];
               if (item) {
+                const cur = parseFloat(item.nv);
+                const pcv = parseFloat(item.pcv);
+                const cr = parseFloat(item.cr) || 0;
+                const rf = item.rf;
                 results[ticker] = {
-                  cur: parseFloat(item.nv), // 현재가
-                  changePercent: parseFloat(item.cr) // 전일대비 등락율
+                  cur: cur,
+                  changePercent: pcv ? ((cur - pcv) / pcv) * 100 : ((rf === '4' || rf === '5') ? -cr : cr)
                 };
               }
             }

@@ -796,9 +796,13 @@ async function fetchRealtimeQuotes() {
             const raw = await res.json();
             const item = raw && raw.result && raw.result.areas && raw.result.areas[0] && raw.result.areas[0].datas && raw.result.areas[0].datas[0];
             if (item) {
+              const cur = parseFloat(item.nv);
+              const pcv = parseFloat(item.pcv);
+              const cr = parseFloat(item.cr) || 0;
+              const rf = item.rf;
               results[ticker] = {
-                cur: parseFloat(item.nv),
-                changePercent: parseFloat(item.cr)
+                cur: cur,
+                changePercent: pcv ? ((cur - pcv) / pcv) * 100 : ((rf === '4' || rf === '5') ? -cr : cr)
               };
             }
           }
