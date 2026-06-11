@@ -89,7 +89,7 @@ header .date{font-size:.78rem;color:var(--ink-faint);font-weight:500;}
 .h-divider{height:1px;background:var(--line);opacity:0.6;}
 .h-owner{display:inline-block;font-size:.67rem;font-weight:800;color:var(--ink-soft);background:#efe9dc;border-radius:6px;padding:2px 7px;margin-bottom:5px;letter-spacing:.02em;}
 .holding .h-name{font-size:1.02rem;font-weight:700;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.holding .h-meta{font-size:.76rem;color:var(--ink-faint);font-weight:500;display:grid;grid-template-columns:70px 115px 1fr;gap:8px;}
+.holding .h-meta{font-size:.76rem;color:var(--ink-faint);font-weight:500;display:grid;grid-template-columns:60px 140px 1fr;gap:8px;}
 .holding .h-eval{font-size:1.02rem;font-weight:700;}
 .holding .h-rate{font-size:.82rem;font-weight:700;margin-top:2px;}
 @keyframes rise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
@@ -694,8 +694,8 @@ function render(){
         <div class="h-divider"></div>
         <div class="h-meta">
           <span>${qtyStr(c.qty)}주</span>
-          <span>평균 ${dmoney(c.avg)}</span>
-          <span>현재 ${dmoney(+p.cur||0)}${pctText}</span>
+          <span>평균매수가 ${dmoney(c.avg)}</span>
+          <span>현재가 ${dmoney(+p.cur||0)}${pctText}</span>
         </div>
       </div>`;
     }).join('');
@@ -761,8 +761,8 @@ function render(){
         <div class="h-divider"></div>
         <div class="h-meta">
           <span>${qtyStr(sale.qty)}주</span>
-          <span>매수 ${dmoney(sale.buyAvg)}</span>
-          <span>매도 ${dmoney(sale.price)}</span>
+          <span>매수평균가 ${dmoney(sale.buyAvg)}</span>
+          <span>매도단가 ${dmoney(sale.price)}</span>
         </div>
       </div>`;
     }).join('');
