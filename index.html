@@ -120,6 +120,9 @@ header .date{font-size:.78rem;color:var(--ink-faint);font-weight:500;}
 .table-header{display:none;grid-template-columns:1.5fr 1.2fr 1.5fr 70px 110px 135px 1.2fr;gap:12px;padding:10px 20px;color:var(--ink-faint);font-size:.78rem;font-weight:700;border-bottom:1px solid var(--line);margin-bottom:8px;}
 .table-header .col-eval{text-align:right;}
 .table-header .col-profit{text-align:right;}
+.table-header .col-qty{text-align:right;}
+.table-header .col-price-avg{text-align:right;}
+.table-header .col-price-cur{text-align:right;}
 @media(min-width:760px){.table-header{display:grid;}}
 
 /* Aligned Table Row Styles for Cards */
@@ -279,9 +282,9 @@ header .date{font-size:.78rem;color:var(--ink-faint);font-weight:500;}
   .col-eval{grid-area:auto;font-size:.94rem;text-align:right;white-space:nowrap;}
   .col-profit{grid-area:auto;font-size:.92rem;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:2px;}
   .col-divider{display:none;}
-  .col-qty{grid-area:auto;font-size:.92rem;color:var(--ink);font-weight:600;}
-  .col-price-avg{grid-area:auto;font-size:.92rem;color:var(--ink);font-weight:600;}
-  .col-price-cur{grid-area:auto;font-size:.92rem;color:var(--ink);font-weight:600;}
+  .col-qty{grid-area:auto;font-size:.92rem;color:var(--ink);font-weight:600;text-align:right;}
+  .col-price-avg{grid-area:auto;font-size:.92rem;color:var(--ink);font-weight:600;text-align:right;}
+  .col-price-cur{grid-area:auto;font-size:.92rem;color:var(--ink);font-weight:600;text-align:right;}
   .col-weight{grid-area:auto;}
   .lbl-m{display:none;}
   .w-bar-container{width:100%;}
@@ -607,7 +610,7 @@ const ownerOf=p=>(p.owner&&p.owner.trim())?p.owner.trim():'미지정';
 
 function fmt(market,n){
   if(market==='us') return '$'+(Math.round(n*100)/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-  return Math.round(n).toLocaleString('ko-KR')+'원';
+  return Math.round(n).toLocaleString('ko-KR')+' 원';
 }
 const cls=n=>n>0?'up':n<0?'down':'flat';
 const qtyStr=q=>q.toLocaleString('ko-KR',{maximumFractionDigits:4});
@@ -983,7 +986,7 @@ function render(){
           <div class="h-pl ${cls(c.pl)}">${dsigned(c.pl)}</div>
         </div>
         <div class="col-divider"></div>
-        <div class="col-qty"><span class="lbl-m">수량</span>${qtyStr(c.qty)}주</div>
+        <div class="col-qty"><span class="lbl-m">수량</span>${qtyStr(c.qty)} 주</div>
         <div class="col-price-avg"><span class="lbl-m">평균매수가</span>${dmoney(c.avg)}</div>
         <div class="col-price-cur"><span class="lbl-m">현재가</span>${dmoney(+p.cur||0)}${pctText}</div>
         <div class="col-weight">
@@ -1095,7 +1098,7 @@ function render(){
           <div class="h-rate ${cls(sale.profit)}">${(sale.rate>0?'+':sale.rate<0?'−':'')}${Math.abs(sale.rate).toFixed(2)}%</div>
         </div>
         <div class="col-divider"></div>
-        <div class="col-qty"><span class="lbl-m">수량</span>${qtyStr(sale.qty)}주</div>
+        <div class="col-qty"><span class="lbl-m">수량</span>${qtyStr(sale.qty)} 주</div>
         <div class="col-price-avg"><span class="lbl-m">매수평균가</span>${dmoney(sale.buyAvg)}</div>
         <div class="col-price-cur"><span class="lbl-m">매도단가</span>${dmoney(sale.price)}</div>
         <div class="col-weight" style="opacity:0;"></div>
