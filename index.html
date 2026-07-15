@@ -15,26 +15,26 @@
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
 
 :root{
-  --paper:#f6f3ec; --card:#fffefb; --ink:#1b1d22; --ink-soft:#5c5f68; --ink-faint:#9a9ca4;
-  --line:#e7e2d7; --up:#e0392b; --down:#1564d2; --accent:#1b1d22;
-  --shadow:0 1px 2px rgba(27,29,34,.04), 0 8px 24px rgba(27,29,34,.06);
+  --paper:#0d0e10; --card:#17181c; --ink:#ffffff; --ink-soft:#8e94a0; --ink-faint:#5d626e;
+  --line:#22242a; --up:#f63e3e; --down:#3b82f6; --accent:#ffffff;
+  --shadow:0 4px 24px rgba(0,0,0,0.4);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-html,body{margin:0;padding:0;}
-body{background:var(--paper);color:var(--ink);
+html,body{margin:0;padding:0;background:var(--paper);color:var(--ink);}
+body{
   font-family:'Pretendard','Pretendard Variable',-apple-system,BlinkMacSystemFont,system-ui,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
   -webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums;font-feature-settings:"tnum";line-height:1.5;}
-.wrap{max-width:480px;margin:0 auto;padding:0 18px 120px;min-height:100vh;}
+.wrap{max-width:960px;margin:0 auto;padding:0 18px 120px;min-height:100vh;}
 
 header{padding:26px 2px 12px;display:flex;align-items:baseline;justify-content:space-between;}
-header h1{font-size:1.35rem;font-weight:800;letter-spacing:-.02em;margin:0;}
+header h1{font-size:1.35rem;font-weight:800;letter-spacing:-.02em;margin:0;color:var(--ink);}
 header .date{font-size:.78rem;color:var(--ink-faint);font-weight:500;}
 .header-left{display:flex;flex-direction:column;}
 
-.tabs{display:flex;gap:6px;background:#ece7da;border-radius:13px;padding:4px;margin-bottom:12px;}
+.tabs{display:flex;gap:6px;background:#22242a;border-radius:13px;padding:4px;margin-bottom:12px;}
 .tab{flex:1;border:none;background:transparent;font-family:inherit;font-size:.92rem;font-weight:700;
   color:var(--ink-soft);padding:10px;border-radius:10px;cursor:pointer;transition:all .15s;}
-.tab.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(27,29,34,.1);}
+.tab.on{background:#2b2d35;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.3);}
 
 .fxbar{display:none;align-items:center;justify-content:space-between;gap:10px;
   background:var(--card);border:1px solid var(--line);border-radius:13px;padding:9px 14px;margin-bottom:12px;box-shadow:var(--shadow);}
@@ -50,28 +50,64 @@ header .date{font-size:.78rem;color:var(--ink-faint);font-weight:500;}
 .switch{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;flex-shrink:0;}
 .switch span.lab{font-size:.82rem;font-weight:700;color:var(--ink-soft);}
 .switch input{display:none;}
-.track{width:42px;height:24px;border-radius:99px;background:#d9d3c5;position:relative;transition:background .18s;flex-shrink:0;}
+.track{width:42px;height:24px;border-radius:99px;background:#2b2d35;position:relative;transition:background .18s;flex-shrink:0;}
 .thumb{position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform .18s;}
 .switch input:checked + .track{background:var(--accent);}
-.switch input:checked + .track .thumb{transform:translateX(18px);}
+.switch input:checked + .track .thumb{transform:translateX(18px);background:#000;}
 
 .owners{display:none;gap:7px;overflow-x:auto;margin-bottom:16px;padding-bottom:2px;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
 .owners::-webkit-scrollbar{display:none;}
 .chip{flex:0 0 auto;border:1px solid var(--line);background:var(--card);border-radius:999px;padding:7px 14px;
   font-size:.84rem;font-weight:700;color:var(--ink-soft);cursor:pointer;white-space:nowrap;transition:all .15s;font-family:inherit;}
-.chip.on{background:var(--accent);color:#fff;border-color:var(--accent);}
+.chip.on{background:var(--accent);color:#0d0e10;border-color:var(--accent);}
 .chip:active{transform:scale(.96);}
 
-.summary{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);overflow:hidden;}
-.sum-hero{padding:20px 20px 16px;border-bottom:1px solid var(--line);}
-.sum-hero .lbl{font-size:.74rem;color:var(--ink-faint);font-weight:600;margin-bottom:6px;}
-.sum-hero .val{font-size:2rem;font-weight:800;letter-spacing:-.025em;line-height:1.1;}
-.sum-hero .sub{margin-top:6px;font-size:.9rem;font-weight:600;}
-.sum-grid{display:grid;grid-template-columns:1fr 1fr;}
-.sum-cell{padding:14px 20px;}
-.sum-cell:first-child{border-right:1px solid var(--line);}
-.sum-cell .lbl{font-size:.72rem;color:var(--ink-faint);font-weight:600;margin-bottom:3px;}
-.sum-cell .v{font-size:1.02rem;font-weight:700;}
+/* 3-Panel Dashboard Layout */
+.dashboard {display:grid;grid-template-columns:1fr;gap:16px;margin-bottom:20px;}
+@media(min-width:760px){.dashboard{grid-template-columns:1.2fr 1.4fr 1.4fr;}}
+.db-panel{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:var(--shadow);display:flex;flex-direction:column;justify-content:space-between;min-height:185px;}
+.db-panel h3{margin:0 0 12px;font-size:.84rem;font-weight:700;color:var(--ink-soft);letter-spacing:-.01em;}
+.db-profile-header{display:flex;align-items:center;gap:12px;margin-bottom:12px;}
+.db-avatar{font-size:1.6rem;background:#22242a;width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:50%;border:1px solid var(--line);}
+.db-user{display:flex;flex-direction:column;}
+.db-name{font-size:.96rem;font-weight:700;color:var(--ink);}
+.db-desc{font-size:.74rem;color:var(--ink-faint);font-weight:500;}
+.db-val-box{margin-bottom:12px;}
+.db-val-box .val-label{font-size:.74rem;color:var(--ink-faint);font-weight:600;margin-bottom:2px;}
+.db-val-box .val-num{font-size:1.6rem;font-weight:800;letter-spacing:-.02em;line-height:1.2;}
+.db-val-box .val-sub{margin-top:2px;display:flex;align-items:center;gap:8px;}
+.db-val-box .val-sub .val{font-size:.9rem;font-weight:700;}
+.db-val-box .val-sub .sub{font-size:.84rem;font-weight:700;}
+.db-stats-row{border-top:1px solid var(--line);padding-top:10px;display:flex;justify-content:space-between;}
+.db-stats-row > div{display:flex;flex-direction:column;gap:1px;}
+.db-stats-row .lbl{font-size:.7rem;color:var(--ink-faint);font-weight:600;}
+.db-stats-row .val{font-size:.9rem;font-weight:700;}
+
+/* Donut Chart inside panel */
+.db-chart-container{display:flex;align-items:center;justify-content:space-between;gap:16px;flex:1;}
+.donut-chart-wrapper{position:relative;width:84px;height:84px;flex-shrink:0;}
+.donut-svg{width:100%;height:100%;transform:rotate(-90deg);}
+.donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;}
+.donut-center .label{font-size:.65rem;color:var(--ink-faint);font-weight:600;}
+.donut-center .value{font-size:.9rem;font-weight:800;}
+.donut-legend{display:flex;flex-direction:column;gap:5px;flex:1;font-size:.74rem;max-height:120px;overflow-y:auto;}
+.legend-item{display:flex;align-items:center;justify-content:space-between;gap:8px;font-weight:500;}
+.legend-label-box{display:flex;align-items:center;gap:6px;min-width:0;}
+.legend-color{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.legend-name{color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.legend-pct{color:var(--ink-faint);font-weight:600;}
+.legend-val{font-weight:700;text-align:right;white-space:nowrap;}
+
+/* Investment Weights panel */
+.weights-list{display:flex;flex-direction:column;gap:8px;flex:1;justify-content:center;}
+.weight-item{display:flex;flex-direction:column;gap:3px;}
+.weight-info{display:flex;align-items:center;justify-content:space-between;font-size:.74rem;font-weight:600;}
+.weight-name{color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px;}
+.weight-pct-val{display:flex;align-items:center;gap:6px;}
+.weight-pct{color:var(--ink);font-weight:700;}
+.weight-val{color:var(--ink-faint);}
+.weight-bar-bg{height:5px;background:var(--line);border-radius:99px;overflow:hidden;}
+.weight-bar-fg{height:100%;border-radius:99px;transition:width .4s ease-out;}
 
 .list-head{display:flex;align-items:center;justify-content:space-between;margin:26px 4px 12px;}
 .list-head h2{font-size:.92rem;font-weight:700;margin:0;color:var(--ink-faint);cursor:pointer;transition:color .15s;}
@@ -79,21 +115,46 @@ header .date{font-size:.78rem;color:var(--ink-faint);font-weight:500;}
 .list-head h2.on::after{content:'';position:absolute;left:0;right:0;bottom:-4px;height:2px;background:var(--ink);border-radius:99px;}
 .list-head .count{font-size:.78rem;color:var(--ink-faint);font-weight:600;}
 
+/* Table Header Styles */
+.table-header{display:none;grid-template-columns:1.6fr 1fr 1.3fr 70px 110px 135px 1.2fr;gap:12px;padding:10px 20px;color:var(--ink-faint);font-size:.78rem;font-weight:700;border-bottom:1px solid var(--line);margin-bottom:8px;}
+@media(min-width:760px){.table-header{display:grid;}}
+
+/* Aligned Table Row Styles for Cards */
 .holding{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px;margin-bottom:10px;
-  box-shadow:var(--shadow);display:flex;flex-direction:column;gap:10px;cursor:pointer;transition:transform .12s ease;
-  animation:rise .45s cubic-bezier(.2,.7,.2,1) both;}
+  box-shadow:var(--shadow);cursor:pointer;transition:transform .12s ease;
+  animation:rise .45s cubic-bezier(.2,.7,.2,1) both;
+  display:grid;
+  grid-template-areas:
+    "info info info eval"
+    "info info info profit"
+    "divider divider divider divider"
+    "qty avg cur cur"
+    "weight weight weight weight";
+  grid-template-columns: 60px 120px 1fr 1fr;
+  gap: 6px 12px;
+  align-items: center;}
 .holding:active{transform:scale(.985);}
-.h-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;}
-.h-top-left{min-width:0;flex:1;}
-.h-top-right{text-align:right;flex-shrink:0;}
-.h-divider{height:1px;background:var(--line);opacity:0.6;}
-.h-owner{display:inline-block;font-size:.67rem;font-weight:800;color:var(--ink-soft);background:#efe9dc;border-radius:6px;padding:2px 7px;margin-bottom:5px;letter-spacing:.02em;}
+
+.col-info{grid-area:info;min-width:0;}
+.col-eval{grid-area:eval;text-align:right;font-size:1.02rem;font-weight:700;}
+.col-profit{grid-area:profit;text-align:right;font-size:.82rem;font-weight:700;display:flex;flex-direction:column;gap:2px;}
+.col-divider{grid-area:divider;height:1px;background:var(--line);opacity:0.6;margin:4px 0;}
+.col-qty{grid-area:qty;font-size:.76rem;color:var(--ink-faint);font-weight:500;}
+.col-price-avg{grid-area:avg;font-size:.76rem;color:var(--ink-faint);font-weight:500;}
+.col-price-cur{grid-area:cur;font-size:.76rem;color:var(--ink-faint);font-weight:500;}
+.col-weight{grid-area:weight;}
+
+.h-owner{display:inline-block;font-size:.67rem;font-weight:800;color:var(--ink-soft);background:#22242a;border-radius:6px;padding:2px 7px;margin-bottom:5px;letter-spacing:.02em;}
 .holding .h-name{font-size:1.02rem;font-weight:700;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.holding .h-meta{font-size:.76rem;color:var(--ink-faint);font-weight:500;display:grid;grid-template-columns:60px 140px 1fr;gap:8px;}
-.holding .h-eval{font-size:1.02rem;font-weight:700;}
-.holding .h-rate{font-size:.82rem;font-weight:700;margin-top:2px;}
-@keyframes rise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
-.up{color:var(--up);} .down{color:var(--down);} .flat{color:var(--ink-soft);}
+
+/* Labels for mobile layout only */
+.lbl-m{display:inline;color:var(--ink-faint);font-size:.67rem;font-weight:600;margin-right:4px;}
+
+/* Weight bar on mobile and desktop */
+.w-bar-container{display:flex;align-items:center;gap:8px;font-size:.74rem;font-weight:600;color:var(--ink-soft);}
+.w-bar-bg{flex:1;height:5px;background:var(--line);border-radius:99px;overflow:hidden;}
+.w-bar-fg{height:100%;border-radius:99px;}
+.w-val{min-width:36px;text-align:right;color:var(--ink);}
 
 .empty{text-align:center;padding:54px 20px;color:var(--ink-faint);}
 .empty .big{font-size:2.4rem;margin-bottom:10px;}
@@ -104,27 +165,27 @@ header .date{font-size:.78rem;color:var(--ink-faint);font-weight:500;}
   font-size:.78rem;font-weight:700;color:var(--ink-soft);cursor:pointer;}
 .tools button:active{transform:scale(.96);}
 
-.fab{position:fixed;left:50%;transform:translateX(-50%);bottom:26px;background:var(--accent);color:#fff;border:none;
+.fab{position:fixed;left:50%;transform:translateX(-50%);bottom:26px;background:var(--accent);color:#0d0e10;border:none;
   border-radius:999px;padding:14px 26px;font-size:.98rem;font-weight:700;font-family:inherit;
-  box-shadow:0 6px 20px rgba(27,29,34,.28);cursor:pointer;z-index:20;display:flex;align-items:center;gap:8px;}
+  box-shadow:0 6px 20px rgba(0,0,0,0.4);cursor:pointer;z-index:20;display:flex;align-items:center;gap:8px;}
 .fab:active{transform:translateX(-50%) scale(.96);}
 
-.scrim{position:fixed;inset:0;background:rgba(20,21,25,.4);opacity:0;pointer-events:none;transition:opacity .25s;z-index:40;}
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .25s;z-index:40;}
 .scrim.on{opacity:1;pointer-events:auto;}
-.sheet{position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--paper);border-radius:22px 22px 0 0;
-  max-width:480px;margin:0 auto;padding:8px 20px calc(22px + env(safe-area-inset-bottom));
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:50;background:#17181c;border-radius:22px 22px 0 0;
+  border-top:1px solid var(--line);max-width:480px;margin:0 auto;padding:8px 20px calc(22px + env(safe-area-inset-bottom));
   transform:translateY(110%);transition:transform .3s cubic-bezier(.2,.8,.2,1);
-  box-shadow:0 -8px 40px rgba(20,21,25,.18);max-height:92vh;overflow-y:auto;
+  box-shadow:0 -8px 40px rgba(0,0,0,.4);max-height:92vh;overflow-y:auto;
   pointer-events:none;}
 .sheet.on{transform:none;pointer-events:auto;}
 .grip{width:40px;height:4px;background:var(--line);border-radius:999px;margin:8px auto 16px;}
 .sheet h3{margin:0 0 4px;font-size:1.12rem;font-weight:800;}
 
 .d-owner{font-size:.78rem;color:var(--ink-soft);font-weight:700;margin-bottom:14px;}
-.range-toggle{display:flex;gap:6px;background:#ece7da;border-radius:11px;padding:4px;margin-bottom:14px;}
+.range-toggle{display:flex;gap:6px;background:#22242a;border-radius:11px;padding:4px;margin-bottom:14px;}
 .range-toggle button{flex:1;border:none;background:transparent;font-family:inherit;font-weight:700;font-size:.84rem;
   color:var(--ink-soft);padding:8px;border-radius:8px;cursor:pointer;}
-.range-toggle button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(27,29,34,.1);}
+.range-toggle button.on{background:#2b2d35;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.3);}
 .chartbox{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 10px;margin-bottom:14px;min-height:172px;display:flex;align-items:center;justify-content:center;}
 .chart-msg{font-size:.86rem;color:var(--ink-faint);font-weight:600;text-align:center;line-height:1.6;padding:30px 10px;}
 .chart-msg .dim{font-size:.76rem;color:var(--ink-faint);font-weight:500;}
@@ -133,10 +194,10 @@ header .date{font-size:.78rem;color:var(--ink-faint);font-weight:500;}
 .dstat .l{font-size:.72rem;color:var(--ink-faint);font-weight:600;margin-bottom:2px;}
 .dstat .v{font-size:1rem;font-weight:700;}
 
-.mkt-toggle{display:flex;gap:6px;background:#ece7da;border-radius:11px;padding:4px;margin-bottom:16px;}
+.mkt-toggle{display:flex;gap:6px;background:#22242a;border-radius:11px;padding:4px;margin-bottom:16px;}
 .mkt-toggle button{flex:1;border:none;background:transparent;font-family:inherit;font-weight:700;font-size:.88rem;
   color:var(--ink-soft);padding:9px;border-radius:8px;cursor:pointer;}
-.mkt-toggle button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(27,29,34,.1);}
+.mkt-toggle button.on{background:#2b2d35;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.3);}
 
 .field{margin-bottom:14px;}
 .field label{display:block;font-size:.78rem;font-weight:600;color:var(--ink-soft);margin-bottom:6px;}
@@ -144,9 +205,9 @@ header .date{font-size:.78rem;color:var(--ink-faint);font-weight:500;}
   font-size:1rem;font-family:inherit;color:var(--ink);outline:none;transition:border-color .15s;font-variant-numeric:tabular-nums;
   appearance:none; -webkit-appearance:none;}
 .field input:focus, .field select:focus{border-color:var(--ink);}
-#f-name, #f-cur {background:#ece7da;color:var(--ink-soft);}
+#f-name, #f-cur {background:#22242a;color:var(--ink-soft);border-color:transparent;}
 .field select {
-  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cpath%20d%3D%22M5%207.5L10%2012.5L15%207.5%22%20stroke%3D%22%235c5f68%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cpath%20d%3D%22M5%207.5L10%2012.5L15%207.5%22%20stroke%3D%22%238e94a0%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 14px center;
   background-size: 16px;
@@ -159,7 +220,7 @@ header .date{font-size:.78rem;color:var(--ink-faint);font-weight:500;}
 .lots-head label{font-size:.78rem;font-weight:600;color:var(--ink-soft);}
 .add-lot{border:none;background:transparent;color:var(--ink);font-family:inherit;font-weight:700;font-size:.82rem;cursor:pointer;padding:4px 6px;}
 .lot{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:8px;}
-.lot input{width:100%;border:1px solid var(--line);background:#ffffff;border-radius:9px;padding:10px;
+.lot input{width:100%;border:1px solid var(--line);background:var(--paper);border-radius:9px;padding:10px;
   font-size:.92rem;font-family:inherit;color:var(--ink);outline:none;font-variant-numeric:tabular-nums;}
 .lot input:focus{border-color:var(--ink);}
 .lot .r1{margin-bottom:8px;}
@@ -170,7 +231,7 @@ header .date{font-size:.78rem;color:var(--ink-faint);font-weight:500;}
 
 .sheet-actions{display:flex;gap:10px;margin-top:4px;}
 .btn{flex:1;border:none;border-radius:12px;padding:14px;font-size:1rem;font-weight:700;font-family:inherit;cursor:pointer;}
-.btn-primary{background:var(--accent);color:#fff;}
+.btn-primary{background:var(--accent);color:#0d0e10;}
 .btn-ghost{background:transparent;color:var(--ink-soft);border:1px solid var(--line);}
 .btn-danger{background:transparent;color:var(--up);border:1px solid var(--line);flex:0 0 auto;padding:14px 18px;}
 .btn:active{transform:scale(.97);}
@@ -197,12 +258,31 @@ header .date{font-size:.78rem;color:var(--ink-faint);font-weight:500;}
 .btn-logout:active { transform: scale(.96); }
 
 @media(min-width:760px){
-  .wrap{max-width:900px;padding:0 28px 120px;}
+  .wrap{max-width:960px;padding:0 28px 120px;}
   header{padding:34px 4px 16px;} header h1{font-size:1.6rem;}
   .tabs,.fxbar{max-width:460px;}
-  #list{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-  #list .empty{grid-column:1 / -1;}
-  .holding{margin-bottom:0;}
+  #list{display:flex;flex-direction:column;gap:0;}
+  .holding{
+    grid-template-areas:none;
+    grid-template-columns:1.6fr 1fr 1.3fr 70px 110px 135px 1.2fr;
+    gap:12px;
+    padding:16px 20px;
+    border-radius:12px;
+    margin-bottom:8px;
+    align-items:center;
+  }
+  .holding:active{transform:scale(.99);}
+  .col-info{grid-area:auto;}
+  .col-eval{grid-area:auto;font-size:.94rem;text-align:left;}
+  .col-profit{grid-area:auto;font-size:.92rem;text-align:left;display:flex;flex-direction:row;align-items:baseline;gap:8px;}
+  .col-divider{display:none;}
+  .col-qty{grid-area:auto;font-size:.92rem;color:var(--ink);font-weight:600;}
+  .col-price-avg{grid-area:auto;font-size:.92rem;color:var(--ink);font-weight:600;}
+  .col-price-cur{grid-area:auto;font-size:.92rem;color:var(--ink);font-weight:600;}
+  .col-weight{grid-area:auto;}
+  .lbl-m{display:none;}
+  .w-bar-container{width:100%;}
+  .w-bar-container .lbl-m{display:none;}
   .fab{left:auto;right:32px;transform:none;bottom:32px;padding:15px 28px;}
   .fab:active{transform:scale(.96);}
   .sheet{top:50%;bottom:auto;left:50%;right:auto;width:460px;max-width:460px;margin:0;border-radius:20px;padding:24px;
@@ -210,6 +290,9 @@ header .date{font-size:.78rem;color:var(--ink-faint);font-weight:500;}
   .sheet.on{transform:translate(-50%,-50%);opacity:1;}
   .grip{display:none;}
 }
+
+@keyframes rise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+.up{color:var(--up);} .down{color:var(--down);} .flat{color:var(--ink-soft);}
 </style>
 </head>
 <body>
@@ -242,15 +325,57 @@ header .date{font-size:.78rem;color:var(--ink-faint);font-weight:500;}
 
   <div class="owners" id="owners"></div>
 
-  <section class="summary">
-    <div class="sum-hero">
-      <div class="lbl" id="heroLabel">평가 손익</div>
-      <div class="val" id="totalPL">0원</div>
-      <div class="sub" id="totalRate">0.00%</div>
+  <section class="dashboard">
+    <!-- Panel 1: Profile & Total Wealth -->
+    <div class="db-panel db-profile">
+      <div class="db-profile-header">
+        <div class="db-avatar">💼</div>
+        <div class="db-user">
+          <span class="db-name">포트폴리오 자산</span>
+          <span class="db-desc" id="heroLabel">보유 자산 요약</span>
+        </div>
+      </div>
+      <div class="db-val-box">
+        <div class="val-label" id="evalLabel">총 평가금액</div>
+        <div class="val-num" id="totalEval">0원</div>
+        <div class="val-sub" id="totalPLContainer">
+          <span id="totalPL" class="val">0원</span>
+          <span id="totalRate" class="sub">0.00%</span>
+        </div>
+      </div>
+      <div class="db-stats-row">
+        <div>
+          <span class="lbl" id="buyLabel">총 매수금액</span>
+          <span class="val" id="totalBuy">0원</span>
+        </div>
+      </div>
     </div>
-    <div class="sum-grid">
-      <div class="sum-cell"><div class="lbl" id="buyLabel">총 매수금액</div><div class="v" id="totalBuy">0원</div></div>
-      <div class="sum-cell"><div class="lbl" id="evalLabel">총 평가금액</div><div class="v" id="totalEval">0원</div></div>
+
+    <!-- Panel 2: Asset Allocation Donut Chart -->
+    <div class="db-panel db-chart">
+      <h3 id="panel2Title">자산 비중</h3>
+      <div class="db-chart-container">
+        <div class="donut-chart-wrapper">
+          <svg viewBox="0 0 100 100" class="donut-svg" id="donutSvg">
+            <!-- Dynamic SVG circles -->
+          </svg>
+          <div class="donut-center">
+            <span class="label" id="donutCenterLabel">종목 수</span>
+            <span class="value" id="donutTotalCount">0</span>
+          </div>
+        </div>
+        <div class="donut-legend" id="donutLegend">
+          <!-- Legend -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel 3: Holdings Weights -->
+    <div class="db-panel db-weights">
+      <h3 id="panel3Title">투자 비중 (Top 4)</h3>
+      <div class="weights-list" id="weightsList">
+        <!-- Weights progress bars -->
+      </div>
     </div>
   </section>
 
@@ -643,6 +768,81 @@ function renderOwners(){
 
 let activeListTab = 'holdings';
 
+const CHART_COLORS = ['#ff4d4d', '#ff9f43', '#10ac84', '#2e86de', '#9b59b6', '#00d2d3', '#f1c40f', '#8395a7'];
+
+function renderDonutChart(segments, tEval) {
+  const svg = $('donutSvg');
+  const legend = $('donutLegend');
+  if (!svg || !legend) return;
+
+  $('donutTotalCount').textContent = segments.length;
+
+  if (segments.length === 0 || tEval === 0) {
+    svg.innerHTML = `<circle cx="50" cy="50" r="38" fill="transparent" stroke="var(--line)" stroke-width="12" />`;
+    legend.innerHTML = `<div style="color:var(--ink-faint);font-size:.76rem;text-align:center;padding:20px 0;width:100%;">자산 내역 없음</div>`;
+    return;
+  }
+
+  const r = 38;
+  const C = 2 * Math.PI * r;
+  let currentOffset = 0;
+  let circlesHtml = '';
+  let legendHtml = '';
+
+  segments.forEach((seg) => {
+    const pct = seg.pct;
+    const strokeLength = (C * pct) / 100;
+    const strokeDash = `${strokeLength.toFixed(2)} ${C.toFixed(2)}`;
+    const strokeOffset = (-currentOffset).toFixed(2);
+    currentOffset += strokeLength;
+
+    circlesHtml += `<circle cx="50" cy="50" r="${r}" fill="transparent" 
+      stroke="${seg.color}" stroke-width="12" 
+      stroke-dasharray="${strokeDash}" stroke-dashoffset="${strokeOffset}" 
+      style="transition: stroke-dashoffset 0.6s ease;" />`;
+
+    legendHtml += `
+      <div class="legend-item">
+        <div class="legend-label-box">
+          <span class="legend-color" style="background:${seg.color}"></span>
+          <span class="legend-name">${esc(seg.name)}</span>
+        </div>
+        <div class="legend-val">
+          <span class="legend-pct">${pct.toFixed(1)}%</span>
+        </div>
+      </div>`;
+  });
+
+  svg.innerHTML = circlesHtml;
+  legend.innerHTML = legendHtml;
+}
+
+function renderWeightsList(segments, tEval) {
+  const container = $('weightsList');
+  if (!container) return;
+
+  if (segments.length === 0 || tEval === 0) {
+    container.innerHTML = `<div style="color:var(--ink-faint);font-size:.76rem;text-align:center;padding:20px 0;width:100%;">자산 내역 없음</div>`;
+    return;
+  }
+
+  const top4 = segments.slice(0, 4);
+  container.innerHTML = top4.map(seg => `
+    <div class="weight-item">
+      <div class="weight-info">
+        <span class="weight-name">${esc(seg.name)}</span>
+        <div class="weight-pct-val">
+          <span class="weight-pct">${seg.pct.toFixed(1)}%</span>
+          <span class="weight-val">${dmoney(seg.val)}</span>
+        </div>
+      </div>
+      <div class="weight-bar-bg">
+        <div class="weight-bar-fg" style="width: ${seg.pct}%; background: ${seg.color};"></div>
+      </div>
+    </div>
+  `).join('');
+}
+
 function render(){
   updateFxBar();
   renderOwners();
@@ -670,32 +870,75 @@ function render(){
     $('totalEval').textContent=dmoney(tEval);
     $('count').textContent=mine.length+'종목';
 
+    // Top dashboard donut chart & weights
+    const sortedHoldings = [...mine].map(p => ({ p, c: calc(p) })).sort((a,b) => b.c.ev - a.c.ev);
+    const segments = [];
+    let otherSum = 0;
+    sortedHoldings.forEach((item, idx) => {
+      if (idx < 5) {
+        segments.push({ name: item.p.name, val: item.c.ev, pct: tEval > 0 ? (item.c.ev / tEval) * 100 : 0, color: CHART_COLORS[idx % CHART_COLORS.length] });
+      } else {
+        otherSum += item.c.ev;
+      }
+    });
+    if (otherSum > 0) {
+      segments.push({ name: '기타', val: otherSum, pct: tEval > 0 ? (otherSum / tEval) * 100 : 0, color: '#8395a7' });
+    }
+    
+    $('panel2Title').textContent = '자산 비중';
+    $('panel3Title').textContent = '투자 비중 (Top 4)';
+    $('donutCenterLabel').textContent = '종목 수';
+    renderDonutChart(segments, tEval);
+    renderWeightsList(segments, tEval);
+
     const list=$('list');
     if(mine.length===0){
       const nm=activeTab==='kr'?'국내':'미국';
       list.innerHTML=`<div class="empty"><div class="big">📈</div><p><b>아직 ${nm} 보유 종목이 없어요</b></p><p>아래 버튼으로 보유 종목을 추가해보세요</p></div>`;
       return;
     }
-    list.innerHTML=mine.map((p,i)=>{
+
+    let headerHtml = '';
+    if (mine.length > 0) {
+      headerHtml = `<div class="table-header">
+        <span class="col-info">종목명</span>
+        <span class="col-eval">평가금액</span>
+        <span class="col-profit">평가손익 / 수익률</span>
+        <span class="col-qty">보유수량</span>
+        <span class="col-price-avg">평균매수가</span>
+        <span class="col-price-cur">현재가</span>
+        <span class="col-weight">투자비중</span>
+      </div>`;
+    }
+
+    list.innerHTML=headerHtml + mine.map((p,i)=>{
       const c=calc(p);
       const pct = p.changePercent;
       const pctText = pct != null ? `<span class="${cls(pct)}" style="font-weight:700;font-size:0.75rem;margin-left:4px;">(${pct > 0 ? '+' : pct < 0 ? '−' : ''}${Math.abs(pct).toFixed(2)}%)</span>` : '';
+      
+      const weight = tEval > 0 ? (c.ev / tEval) * 100 : 0;
+      const color = CHART_COLORS[i % CHART_COLORS.length];
+
       return `<div class="holding" data-id="${p.id}" style="animation-delay:${i*45}ms">
-        <div class="h-top">
-          <div class="h-top-left">
-            <span class="h-owner">${esc(ownerOf(p))}${p.broker ? ' · ' + esc(p.broker) : ''}</span>
-            <div class="h-name">${esc(p.name)}</div>
-          </div>
-          <div class="h-top-right">
-            <div class="h-eval">${dmoney(c.ev)}</div>
-            <div class="h-rate ${cls(c.pl)}">${(c.rate>0?'+':c.rate<0?'−':'')}${Math.abs(c.rate).toFixed(2)}% · ${dsigned(c.pl)}</div>
-          </div>
+        <div class="col-info">
+          <span class="h-owner">${esc(ownerOf(p))}${p.broker ? ' · ' + esc(p.broker) : ''}</span>
+          <div class="h-name">${esc(p.name)}</div>
         </div>
-        <div class="h-divider"></div>
-        <div class="h-meta">
-          <span>${qtyStr(c.qty)}주</span>
-          <span>평균매수가 ${dmoney(c.avg)}</span>
-          <span>현재가 ${dmoney(+p.cur||0)}${pctText}</span>
+        <div class="col-eval">${dmoney(c.ev)}</div>
+        <div class="col-profit">
+          <div class="h-rate ${cls(c.pl)}">${(c.rate>0?'+':c.rate<0?'−':'')}${Math.abs(c.rate).toFixed(2)}%</div>
+          <div class="h-pl ${cls(c.pl)}">${dsigned(c.pl)}</div>
+        </div>
+        <div class="col-divider"></div>
+        <div class="col-qty"><span class="lbl-m">수량</span>${qtyStr(c.qty)}주</div>
+        <div class="col-price-avg"><span class="lbl-m">평균매수가</span>${dmoney(c.avg)}</div>
+        <div class="col-price-cur"><span class="lbl-m">현재가</span>${dmoney(+p.cur||0)}${pctText}</div>
+        <div class="col-weight">
+          <div class="w-bar-container">
+            <span class="lbl-m">투자비중</span>
+            <div class="w-bar-bg"><div class="w-bar-fg" style="width:${weight}%; background:${color};"></div></div>
+            <span class="w-val">${weight.toFixed(1)}%</span>
+          </div>
         </div>
       </div>`;
     }).join('');
@@ -741,29 +984,68 @@ function render(){
     $('totalEval').textContent=dmoney(tRealSell);
     $('count').textContent=salesList.length+'건';
 
+    // Top dashboard donut chart & weights for realized sales
+    const salesGrouped = {};
+    salesList.forEach(s => {
+      if (!salesGrouped[s.name]) {
+        salesGrouped[s.name] = { name: s.name, val: 0 };
+      }
+      salesGrouped[s.name].val += s.price * s.qty; // total sold value
+    });
+    const sortedSales = Object.values(salesGrouped).sort((a,b) => b.val - a.val);
+    const segments = [];
+    let otherSum = 0;
+    sortedSales.forEach((item, idx) => {
+      if (idx < 5) {
+        segments.push({ name: item.name, val: item.val, pct: tRealSell > 0 ? (item.val / tRealSell) * 100 : 0, color: CHART_COLORS[idx % CHART_COLORS.length] });
+      } else {
+        otherSum += item.val;
+      }
+    });
+    if (otherSum > 0) {
+      segments.push({ name: '기타', val: otherSum, pct: tRealSell > 0 ? (otherSum / tRealSell) * 100 : 0, color: '#8395a7' });
+    }
+
+    $('panel2Title').textContent = '매도 비중';
+    $('panel3Title').textContent = '실현 매도 (Top 4)';
+    $('donutCenterLabel').textContent = '종목 수';
+    renderDonutChart(segments, tRealSell);
+    renderWeightsList(segments, tRealSell);
+
     const list=$('list');
     if(salesList.length===0){
       list.innerHTML=`<div class="empty"><div class="big">💸</div><p><b>실현 손익 내역이 없습니다</b></p><p>보유 종목 상세 화면에서 매도를 진행해보세요</p></div>`;
       return;
     }
-    list.innerHTML=salesList.map((sale,i)=>{
+
+    let headerHtml = '';
+    if (salesList.length > 0) {
+      headerHtml = `<div class="table-header">
+        <span class="col-info">종목명</span>
+        <span class="col-eval">실현손익</span>
+        <span class="col-profit">수익률</span>
+        <span class="col-qty">매도수량</span>
+        <span class="col-price-avg">매수평균가</span>
+        <span class="col-price-cur">매도단가</span>
+        <span class="col-weight"></span>
+      </div>`;
+    }
+
+    list.innerHTML=headerHtml + salesList.map((sale,i)=>{
       return `<div class="holding" data-id="${sale.id}" style="animation-delay:${i*45}ms">
-        <div class="h-top">
-          <div class="h-top-left">
-            <span class="h-owner">${esc(ownerOf(sale))}${sale.broker ? ' · ' + esc(sale.broker) : ''} · ${sale.date} 매도</span>
-            <div class="h-name">${esc(sale.name)}</div>
-          </div>
-          <div class="h-top-right">
-            <div class="h-eval ${cls(sale.profit)}">${dsigned(sale.profit)}</div>
-            <div class="h-rate ${cls(sale.profit)}">${(sale.rate>0?'+':sale.rate<0?'−':'')}${Math.abs(sale.rate).toFixed(2)}%</div>
-          </div>
+        <div class="col-info">
+          <span class="h-owner">${esc(ownerOf(sale))}${sale.broker ? ' · ' + esc(sale.broker) : ''} · ${sale.date} 매도</span>
+          <div class="h-name">${esc(sale.name)}</div>
         </div>
-        <div class="h-divider"></div>
-        <div class="h-meta">
-          <span>${qtyStr(sale.qty)}주</span>
-          <span>매수평균가 ${dmoney(sale.buyAvg)}</span>
-          <span>매도단가 ${dmoney(sale.price)}</span>
+        <div class="col-eval ${cls(sale.profit)}">${dsigned(sale.profit)}</div>
+        <div class="col-profit">
+          <div class="h-rate ${cls(sale.profit)}">${(sale.rate>0?'+':sale.rate<0?'−':'')}${Math.abs(sale.rate).toFixed(2)}%</div>
         </div>
+        <div class="col-divider"></div>
+        <div class="col-qty"><span class="lbl-m">수량</span>${qtyStr(sale.qty)}주</div>
+        <div class="col-price-avg"><span class="lbl-m">매수평균가</span>${dmoney(sale.buyAvg)}</div>
+        <div class="col-price-cur"><span class="lbl-m">매도단가</span>${dmoney(sale.price)}</div>
+        <div class="col-weight" style="opacity:0;"></div>
       </div>`;
     }).join('');
     list.querySelectorAll('.holding').forEach(el=>el.addEventListener('click',()=>openDetail(el.dataset.id)));
