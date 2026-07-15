@@ -90,7 +90,8 @@ header .date{font-size:.78rem;color:var(--ink-faint);font-weight:500;}
 .donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;}
 .donut-center .label{font-size:.65rem;color:var(--ink-faint);font-weight:600;}
 .donut-center .value{font-size:.9rem;font-weight:800;}
-.donut-legend{display:flex;flex-direction:column;gap:5px;flex:1;font-size:.74rem;max-height:120px;overflow-y:auto;}
+.donut-legend{display:flex;flex-direction:column;gap:5px;flex:1;font-size:.74rem;max-height:120px;overflow-y:auto;scrollbar-width:none;}
+.donut-legend::-webkit-scrollbar{display:none;}
 .legend-item{display:flex;align-items:center;justify-content:space-between;gap:8px;font-weight:500;}
 .legend-label-box{display:flex;align-items:center;gap:6px;min-width:0;}
 .legend-color{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
@@ -295,6 +296,28 @@ header .date{font-size:.78rem;color:var(--ink-faint);font-weight:500;}
 
 @keyframes rise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
 .up{color:var(--up);} .down{color:var(--down);} .flat{color:var(--ink-soft);}
+
+/* Light theme support */
+body.light-theme {
+  --paper:#f6f3ec; --card:#fffefb; --ink:#1b1d22; --ink-soft:#5c5f68; --ink-faint:#9a9ca4;
+  --line:#e7e2d7; --up:#e0392b; --down:#1564d2; --accent:#1b1d22;
+  --shadow:0 1px 2px rgba(27,29,34,.04), 0 8px 24px rgba(27,29,34,.06);
+}
+body.light-theme .tabs { background: #ece7da; }
+body.light-theme .tab.on { background: var(--card); color: var(--ink); box-shadow: 0 1px 3px rgba(27,29,34,.1); }
+body.light-theme .h-owner { background: #efe9dc; }
+body.light-theme #f-name, body.light-theme #f-cur { background: #ece7da; }
+body.light-theme .range-toggle { background: #ece7da; }
+body.light-theme .range-toggle button.on { background: var(--card); color: var(--ink); box-shadow: 0 1px 3px rgba(27,29,34,.1); }
+body.light-theme .mkt-toggle { background: #ece7da; }
+body.light-theme .mkt-toggle button.on { background: var(--card); color: var(--ink); box-shadow: 0 1px 3px rgba(27,29,34,.1); }
+body.light-theme .lot input { background: #ffffff; }
+body.light-theme .track { background: #d9d3c5; }
+body.light-theme .thumb { background: #ffffff; }
+body.light-theme .btn-primary { color: #ffffff; }
+body.light-theme .fab { color: #ffffff; }
+body.light-theme .sheet { background: var(--paper); box-shadow: 0 -8px 40px rgba(20,21,25,.18); }
+body.light-theme .db-avatar { background: #efe9dc; }
 </style>
 </head>
 <body>
@@ -304,7 +327,10 @@ header .date{font-size:.78rem;color:var(--ink-faint);font-weight:500;}
       <h1>내 주식</h1>
       <span class="date" id="date"></span>
     </div>
-    <button id="logoutBtn" class="btn-logout" style="display:none">로그아웃</button>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button id="themeToggleBtn" class="btn-logout">☀️ 라이트 모드</button>
+      <button id="logoutBtn" class="btn-logout" style="display:none">로그아웃</button>
+    </div>
   </header>
 
   <div class="tabs">
@@ -551,6 +577,31 @@ let detailId=null, detailRange='3mo';
 let fxRate=1558, showKRW=false, fxAuto=false, lastFxAt=0;
 
 const $=id=>document.getElementById(id);
+
+// ---- Theme Switcher ----
+function setTheme(theme) {
+  if (theme === 'light') {
+    document.body.classList.add('light-theme');
+    const toggle = $('themeToggleBtn');
+    if (toggle) toggle.textContent = '🌙 다크 모드';
+    localStorage.setItem('portfolio:theme', 'light');
+  } else {
+    document.body.classList.remove('light-theme');
+    const toggle = $('themeToggleBtn');
+    if (toggle) toggle.textContent = '☀️ 라이트 모드';
+    localStorage.setItem('portfolio:theme', 'dark');
+  }
+}
+function initTheme() {
+  const saved = localStorage.getItem('portfolio:theme') || 'dark';
+  setTheme(saved);
+}
+initTheme();
+$('themeToggleBtn').addEventListener('click', () => {
+  const isLight = document.body.classList.contains('light-theme');
+  setTheme(isLight ? 'dark' : 'light');
+});
+
 const todayStr=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};
 const ownerOf=p=>(p.owner&&p.owner.trim())?p.owner.trim():'미지정';
 
