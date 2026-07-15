@@ -147,7 +147,8 @@ header .date{font-size:.78rem;color:var(--ink-faint);font-weight:500;}
 .col-divider{grid-area:divider;height:1px;background:var(--line);opacity:0.6;margin:4px 0;}
 .col-qty{grid-area:qty;font-size:.76rem;color:var(--ink-faint);font-weight:500;}
 .col-price-avg{grid-area:avg;font-size:.76rem;color:var(--ink-faint);font-weight:500;}
-.col-price-cur{grid-area:cur;font-size:.76rem;color:var(--ink-faint);font-weight:500;}
+.col-price-cur{grid-area:cur;font-size:.76rem;color:var(--ink-faint);font-weight:500;display:flex;flex-direction:column;align-items:flex-start;gap:2px;}
+.cur-pct{font-size:.7rem;font-weight:700;}
 .col-weight{grid-area:weight;}
 
 .h-owner{display:inline-block;font-size:.67rem;font-weight:800;color:var(--ink-soft);background:#22242a;border-radius:6px;padding:2px 7px;margin-bottom:5px;letter-spacing:.02em;}
@@ -284,7 +285,7 @@ header .date{font-size:.78rem;color:var(--ink-faint);font-weight:500;}
   .col-divider{display:none;}
   .col-qty{grid-area:auto;font-size:.92rem;color:var(--ink);font-weight:600;text-align:right;}
   .col-price-avg{grid-area:auto;font-size:.92rem;color:var(--ink);font-weight:600;text-align:right;}
-  .col-price-cur{grid-area:auto;font-size:.92rem;color:var(--ink);font-weight:600;text-align:right;}
+  .col-price-cur{grid-area:auto;font-size:.92rem;color:var(--ink);font-weight:600;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:2px;}
   .col-weight{grid-area:auto;}
   .lbl-m{display:none;}
   .w-bar-container{width:100%;}
@@ -971,7 +972,8 @@ function render(){
     list.innerHTML=headerHtml + mine.map((p,i)=>{
       const c=calc(p);
       const pct = p.changePercent;
-      const pctText = pct != null ? `<span class="${cls(pct)}" style="font-weight:700;font-size:0.75rem;margin-left:4px;">(${pct > 0 ? '+' : pct < 0 ? '−' : ''}${Math.abs(pct).toFixed(2)}%)</span>` : '';
+      const pctSign = pct > 0 ? '+' : pct < 0 ? '−' : '';
+      const pctValText = pct != null ? `(${pctSign}${Math.abs(pct).toFixed(2)}%)` : '—';
       
       const weight = tEval > 0 ? (c.ev / tEval) * 100 : 0;
       const color = CHART_COLORS[i % CHART_COLORS.length];
@@ -989,7 +991,13 @@ function render(){
         <div class="col-divider"></div>
         <div class="col-qty"><span class="lbl-m">수량</span>${qtyStr(c.qty)} 주</div>
         <div class="col-price-avg"><span class="lbl-m">평균매수가</span>${dmoney(c.avg)}</div>
-        <div class="col-price-cur"><span class="lbl-m">현재가</span>${dmoney(+p.cur||0)}${pctText}</div>
+        <div class="col-price-cur">
+          <div class="cur-val-wrapper">
+            <span class="lbl-m">현재가</span>
+            <span class="cur-val">${dmoney(+p.cur||0)}</span>
+          </div>
+          <div class="cur-pct ${cls(pct)}">${pctValText}</div>
+        </div>
         <div class="col-weight">
           <div class="w-bar-container">
             <span class="lbl-m">투자비중</span>
@@ -1101,7 +1109,12 @@ function render(){
         <div class="col-divider"></div>
         <div class="col-qty"><span class="lbl-m">수량</span>${qtyStr(sale.qty)} 주</div>
         <div class="col-price-avg"><span class="lbl-m">매수평균가</span>${dmoney(sale.buyAvg)}</div>
-        <div class="col-price-cur"><span class="lbl-m">매도단가</span>${dmoney(sale.price)}</div>
+        <div class="col-price-cur">
+          <div class="cur-val-wrapper">
+            <span class="lbl-m">매도단가</span>
+            <span class="cur-val">${dmoney(sale.price)}</span>
+          </div>
+        </div>
         <div class="col-weight" style="opacity:0;"></div>
       </div>`;
     }).join('');
