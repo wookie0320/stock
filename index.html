@@ -301,6 +301,17 @@ header .date{font-size:.78rem;color:var(--ink-faint);font-weight:500;}
 @keyframes rise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
 .up{color:var(--up);} .down{color:var(--down);} .flat{color:var(--ink-soft);}
 
+/* Index Ticker Bar */
+.index-bar{display:flex;gap:10px;margin:0 4px 16px;}
+.index-card{flex:1;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--shadow);font-size:.82rem;font-weight:600;}
+.index-name{color:var(--ink-soft);font-size:.78rem;font-weight:700;}
+.index-val-box{display:flex;align-items:baseline;gap:6px;}
+.index-val-box.up{color:var(--up);}
+.index-val-box.down{color:var(--down);}
+.index-val-box.flat{color:var(--ink-soft);}
+.index-val{font-size:.88rem;font-weight:800;font-variant-numeric:tabular-nums;}
+.index-pct{font-size:.74rem;font-weight:700;font-variant-numeric:tabular-nums;}
+
 /* Light theme support */
 body.light-theme {
   --paper:#f6f3ec; --card:#fffefb; --ink:#1b1d22; --ink-soft:#5c5f68; --ink-faint:#9a9ca4;
@@ -411,6 +422,8 @@ body.light-theme .chip.on { color: #ffffff; }
       </div>
     </div>
   </section>
+
+  <div class="index-bar" id="indexBar"></div>
 
   <div class="list-head">
     <div style="display:flex;gap:16px;align-items:center;">
@@ -607,6 +620,103 @@ $('themeToggleBtn').addEventListener('click', () => {
   setTheme(isLight ? 'dark' : 'light');
 });
 
+let indicesData = {
+  '^KS11': { cur: 0, changePercent: 0, name: '코스피' },
+  '^KQ11': { cur: 0, changePercent: 0, name: '코스닥' },
+  '^GSPC': { cur: 0, changePercent: 0, name: 'S&P 500' },
+  '^IXIC': { cur: 0, changePercent: 0, name: '나스닥' }
+};
+
+async function fetchIndices() {
+  const symbols = ['^KS11', '^KQ11', '^GSPC', '^IXIC'];
+  if (window.location.protocol === 'file:') {
+    const promises = symbols.map(async (sym) => {
+      try {
+        const url = PROXY + encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?range=1d&interval=1d`);
+        const res = await fetch(url);
+        if (res.ok) {
+          const data = await res.json();
+          const meta = data && data.chart && data.chart.result && data.chart.result[0] && data.chart.result[0].meta;
+          if (meta) {
+            const cur = meta.regularMarketPrice;
+            const prev = meta.chartPreviousClose;
+            indicesData[sym].cur = cur;
+            indicesData[sym].changePercent = prev ? ((cur - prev) / prev) * 100 : 0;
+          }
+        }
+      } catch (e) {
+        console.error(`Local index fetch failed for ${sym}:`, e);
+      }
+    });
+    await Promise.all(promises);
+  } else {
+    try {
+      const target = `/api/quotes?us=${encodeURIComponent(symbols.join(','))}`;
+      const res = await fetch(target);
+      if (res.ok) {
+        const data = await res.json();
+        symbols.forEach(sym => {
+          const q = data[sym.toUpperCase()];
+          if (q) {
+            indicesData[sym].cur = q.cur;
+            indicesData[sym].changePercent = q.changePercent;
+          }
+        });
+      }
+    } catch (e) {
+      console.error('Vercel index fetch failed:', e);
+    }
+  }
+  renderIndices();
+}
+
+function renderIndices() {
+  const container = $('indexBar');
+  if (!container) return;
+  
+  let html = '';
+  if (activeTab === 'kr') {
+    const kospi = indicesData['^KS11'];
+    const kosdaq = indicesData['^KQ11'];
+    html = `
+      <div class="index-card">
+        <span class="index-name">코스피</span>
+        <div class="index-val-box ${cls(kospi.changePercent)}">
+          <span class="index-val">${kospi.cur ? kospi.cur.toLocaleString('ko-KR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '—'}</span>
+          <span class="index-pct">${kospi.changePercent ? (kospi.changePercent > 0 ? '+' : '') + kospi.changePercent.toFixed(2) + '%' : '0.00%'}</span>
+        </div>
+      </div>
+      <div class="index-card">
+        <span class="index-name">코스닥</span>
+        <div class="index-val-box ${cls(kosdaq.changePercent)}">
+          <span class="index-val">${kosdaq.cur ? kosdaq.cur.toLocaleString('ko-KR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '—'}</span>
+          <span class="index-pct">${kosdaq.changePercent ? (kosdaq.changePercent > 0 ? '+' : '') + kosdaq.changePercent.toFixed(2) + '%' : '0.00%'}</span>
+        </div>
+      </div>
+    `;
+  } else {
+    const sp500 = indicesData['^GSPC'];
+    const nasdaq = indicesData['^IXIC'];
+    html = `
+      <div class="index-card">
+        <span class="index-name">S&P 500</span>
+        <div class="index-val-box ${cls(sp500.changePercent)}">
+          <span class="index-val">${sp500.cur ? sp500.cur.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '—'}</span>
+          <span class="index-pct">${sp500.changePercent ? (sp500.changePercent > 0 ? '+' : '') + sp500.changePercent.toFixed(2) + '%' : '0.00%'}</span>
+        </div>
+      </div>
+      <div class="index-card">
+        <span class="index-name">나스닥</span>
+        <div class="index-val-box ${cls(nasdaq.changePercent)}">
+          <span class="index-val">${nasdaq.cur ? nasdaq.cur.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '—'}</span>
+          <span class="index-pct">${nasdaq.changePercent ? (nasdaq.changePercent > 0 ? '+' : '') + nasdaq.changePercent.toFixed(2) + '%' : '0.00%'}</span>
+        </div>
+      </div>
+    `;
+  }
+  container.innerHTML = html;
+}
+
 const todayStr=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};
 const ownerOf=p=>(p.owner&&p.owner.trim())?p.owner.trim():'미지정';
 
@@ -681,6 +791,7 @@ async function checkSession() {
     render();
     fetchFx();
     fetchRealtimeQuotes();
+    fetchIndices();
   } else {
     user = null;
     $('authScreen').style.display = 'flex';
@@ -904,6 +1015,7 @@ function renderWeightsList(segments, tEval) {
 function render(){
   updateFxBar();
   renderOwners();
+  renderIndices();
   
   $('tabHoldings').classList.toggle('on', activeListTab === 'holdings');
   $('tabHistory').classList.toggle('on', activeListTab === 'history');
@@ -1721,6 +1833,7 @@ $('importFile').addEventListener('change',e=>{
       render();
       alert('성공적으로 불러왔습니다! 이제 모든 기기에서 동기화됩니다.');
       fetchRealtimeQuotes();
+      fetchIndices();
     }catch(err){ alert('백업 파일을 불러오지 못했습니다. 파일 구조를 확인해주세요: ' + err.message); }
     $('importFile').value='';
   };
@@ -1739,6 +1852,7 @@ $('importFile').addEventListener('change',e=>{
     setInterval(() => {
       if (document.visibilityState === 'visible') {
         fetchRealtimeQuotes();
+        fetchIndices();
       }
     }, 60000);
   }
