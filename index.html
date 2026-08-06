@@ -189,11 +189,19 @@ header .date{font-size:.78rem;color:var(--ink-faint);font-weight:500;}
 .sheet h3{margin:0 0 4px;font-size:1.12rem;font-weight:800;}
 
 .d-owner{font-size:.78rem;color:var(--ink-soft);font-weight:700;margin-bottom:14px;}
-.range-toggle{display:flex;gap:6px;background:#22242a;border-radius:11px;padding:4px;margin-bottom:14px;}
+.range-toggle{display:flex;gap:6px;background:#22242a;border-radius:11px;padding:4px;margin-bottom:8px;}
 .range-toggle button{flex:1;border:none;background:transparent;font-family:inherit;font-weight:700;font-size:.84rem;
   color:var(--ink-soft);padding:8px;border-radius:8px;cursor:pointer;}
 .range-toggle button.on{background:#2b2d35;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.3);}
-.chartbox{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 10px;margin-bottom:14px;min-height:172px;display:flex;align-items:center;justify-content:center;}
+
+.indicator-toggle{display:flex;align-items:center;gap:6px;margin-bottom:14px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+.indicator-toggle::-webkit-scrollbar{display:none;}
+.ind-lbl{font-size:.74rem;font-weight:700;color:var(--ink-faint);flex-shrink:0;margin-right:2px;}
+.ind-btn{flex:1;min-width:0;border:1px solid var(--line);background:var(--card);border-radius:8px;padding:6px 6px;
+  font-family:inherit;font-weight:700;font-size:.76rem;color:var(--ink-soft);cursor:pointer;white-space:nowrap;transition:all .15s;text-align:center;}
+.ind-btn.on{background:var(--accent);color:#0d0e10;border-color:var(--accent);}
+
+.chartbox{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 10px;margin-bottom:14px;min-height:172px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;}
 .chart-msg{font-size:.86rem;color:var(--ink-faint);font-weight:600;text-align:center;line-height:1.6;padding:30px 10px;}
 .chart-msg .dim{font-size:.76rem;color:var(--ink-faint);font-weight:500;}
 .dstats{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:16px;}
@@ -334,6 +342,7 @@ body.light-theme .fab { color: #ffffff; }
 body.light-theme .sheet { background: var(--paper); box-shadow: 0 -8px 40px rgba(20,21,25,.18); }
 body.light-theme .db-avatar { background: #efe9dc; }
 body.light-theme .chip.on { color: #ffffff; }
+body.light-theme .ind-btn.on { color: #ffffff; }
 </style>
 </head>
 <body>
@@ -455,6 +464,12 @@ body.light-theme .chip.on { color: #ffffff; }
     <button data-r="1mo">1개월</button>
     <button data-r="3mo" class="on">3개월</button>
     <button data-r="1y">1년</button>
+  </div>
+  <div class="indicator-toggle">
+    <span class="ind-lbl">보조지표</span>
+    <button class="ind-btn" data-ind="ma">이동평균(20/60)</button>
+    <button class="ind-btn" data-ind="rsi">RSI(14)</button>
+    <button class="ind-btn" data-ind="ichimoku">일목균형표</button>
   </div>
   <div class="chartbox" id="dChart"></div>
   <div class="dstats" id="dStats"></div>
@@ -1361,7 +1376,16 @@ async function fetchOne(sym,range){
   const ts=r.timestamp||[];
   const q=r.indicators&&r.indicators.quote&&r.indicators.quote[0];
   const cl=(q&&q.close)||[];
-  const pts=ts.map((t,i)=>({t:t*1000,c:cl[i]})).filter(p=>p.c!=null);
+  const hi=(q&&q.high)||[];
+  const lo=(q&&q.low)||[];
+  const op=(q&&q.open)||[];
+  const pts=ts.map((t,i)=>({
+    t:t*1000,
+    c:cl[i],
+    h:hi[i]!=null?hi[i]:cl[i],
+    l:lo[i]!=null?lo[i]:cl[i],
+    o:op[i]!=null?op[i]:cl[i]
+  })).filter(p=>p.c!=null);
   if(!pts.length) throw 0;
   return pts;
 }
@@ -1371,29 +1395,276 @@ async function loadSeries(p,range){
   }
   throw 0;
 }
-function drawChart(pts,avg,market){
-  const W=320,H=160,padL=6,padR=6,padT=12,padB=16;
-  const cs=pts.map(p=>p.c); let lo=Math.min(...cs),hi=Math.max(...cs);
-  if(avg>0){lo=Math.min(lo,avg);hi=Math.max(hi,avg);}
-  if(lo===hi){hi=lo*1.01||1;lo=lo*0.99;}
-  const X=i=>padL+(pts.length<2?0:(i/(pts.length-1))*(W-padL-padR));
-  const Y=v=>padT+(1-(v-lo)/(hi-lo))*(H-padT-padB);
-  const line=pts.map((p,i)=>`${i?'L':'M'}${X(i).toFixed(1)},${Y(p.c).toFixed(1)}`).join('');
-  const first=pts[0].c,last=pts[pts.length-1].c,up=last>=first;
-  const col=up?'var(--up)':'var(--down)';
-  const area=`${line}L${X(pts.length-1).toFixed(1)},${(H-padB).toFixed(1)}L${X(0).toFixed(1)},${(H-padB).toFixed(1)}Z`;
-  let avgEl='';
-  if(avg>0){const ay=Y(avg).toFixed(1);
-    avgEl=`<line x1="${padL}" y1="${ay}" x2="${W-padR}" y2="${ay}" stroke="var(--ink-faint)" stroke-width="1" stroke-dasharray="4 3"/>
-    <text x="${padL+2}" y="${(+ay-3)}" font-size="9" fill="var(--ink-faint)">평균 ${fmt(market,avg)}</text>`;}
-  return `<svg viewBox="0 0 ${W} ${H}" width="100%" preserveAspectRatio="xMidYMid meet" style="display:block">
+
+let activeIndicators = { ma: false, rsi: false, ichimoku: false };
+
+function calcIndicators(pts) {
+  const n = pts.length;
+  const ma20 = new Array(n).fill(null);
+  const ma60 = new Array(n).fill(null);
+  const rsi = new Array(n).fill(null);
+  const tenkan = new Array(n).fill(null);
+  const kijun = new Array(n).fill(null);
+  const senkouA = new Array(n + 26).fill(null);
+  const senkouB = new Array(n + 26).fill(null);
+  const chikou = new Array(n).fill(null);
+
+  // 1. Moving Averages
+  for (let i = 0; i < n; i++) {
+    if (i >= 19) {
+      let sum = 0;
+      for (let k = i - 19; k <= i; k++) sum += pts[k].c;
+      ma20[i] = sum / 20;
+    }
+    if (i >= 59) {
+      let sum = 0;
+      for (let k = i - 59; k <= i; k++) sum += pts[k].c;
+      ma60[i] = sum / 60;
+    }
+  }
+
+  // 2. RSI (14)
+  let avgG = 0, avgL = 0;
+  let gains = 0, losses = 0;
+  for (let i = 1; i < n; i++) {
+    const diff = pts[i].c - pts[i - 1].c;
+    const g = diff > 0 ? diff : 0;
+    const l = diff < 0 ? -diff : 0;
+
+    if (i <= 14) {
+      gains += g;
+      losses += l;
+      if (i === 14) {
+        avgG = gains / 14;
+        avgL = losses / 14;
+        const rs = avgL === 0 ? 100 : avgG / avgL;
+        rsi[i] = 100 - (100 / (1 + rs));
+      }
+    } else {
+      avgG = (avgG * 13 + g) / 14;
+      avgL = (avgL * 13 + l) / 14;
+      const rs = avgL === 0 ? 100 : avgG / avgL;
+      rsi[i] = 100 - (100 / (1 + rs));
+    }
+  }
+
+  // Helper for Ichimoku
+  const hlMid = (start, end) => {
+    let maxH = -Infinity, minL = Infinity;
+    for (let k = start; k <= end; k++) {
+      if (pts[k].h > maxH) maxH = pts[k].h;
+      if (pts[k].l < minL) minL = pts[k].l;
+    }
+    return (maxH + minL) / 2;
+  };
+
+  // 3. Ichimoku Kinko Hyo
+  for (let i = 0; i < n; i++) {
+    if (i >= 8) tenkan[i] = hlMid(i - 8, i);
+    if (i >= 25) kijun[i] = hlMid(i - 25, i);
+    if (tenkan[i] != null && kijun[i] != null) {
+      senkouA[i + 26] = (tenkan[i] + kijun[i]) / 2;
+    }
+    if (i >= 51) {
+      senkouB[i + 26] = hlMid(i - 51, i);
+    }
+    if (i >= 26) {
+      chikou[i - 26] = pts[i].c;
+    }
+  }
+
+  return { ma20, ma60, rsi, tenkan, kijun, senkouA, senkouB, chikou };
+}
+
+function buildCloudSegment(startIdx, endIdx, senkouA, senkouB, X, Y) {
+  let pathStr = '';
+  let subStart = startIdx;
+
+  for (let i = startIdx; i <= endIdx; i++) {
+    const isBull = senkouA[i] >= senkouB[i];
+    const nextBull = i < endIdx ? (senkouA[i + 1] >= senkouB[i + 1]) : isBull;
+
+    if (i === endIdx || isBull !== nextBull) {
+      let topPath = '', botPath = '';
+      for (let k = subStart; k <= i; k++) {
+        const xVal = X(k).toFixed(1);
+        const yA = Y(senkouA[k]).toFixed(1);
+        const yB = Y(senkouB[k]).toFixed(1);
+        topPath += `${topPath ? 'L' : 'M'}${xVal},${yA}`;
+        botPath = `L${xVal},${yB}` + botPath;
+      }
+      const fillCol = isBull ? 'rgba(224, 57, 43, 0.15)' : 'rgba(21, 100, 210, 0.15)';
+      pathStr += `<path d="${topPath}${botPath}Z" fill="${fillCol}" stroke="none"/>`;
+      subStart = i + 1;
+    }
+  }
+  return pathStr;
+}
+
+function drawChart(pts, avg, market) {
+  const W = 320, H = 160, padL = 6, padR = 6, padT = 18, padB = 16;
+  const ind = calcIndicators(pts);
+  const showMA = activeIndicators.ma;
+  const showRSI = activeIndicators.rsi;
+  const showIchimoku = activeIndicators.ichimoku;
+
+  const totalLen = (showIchimoku ? pts.length + 26 : pts.length);
+
+  // Y-range values collection
+  const vals = pts.map(p => p.c);
+  if (avg > 0) vals.push(avg);
+
+  if (showMA) {
+    ind.ma20.forEach(v => { if (v != null) vals.push(v); });
+    ind.ma60.forEach(v => { if (v != null) vals.push(v); });
+  }
+  if (showIchimoku) {
+    ind.tenkan.forEach(v => { if (v != null) vals.push(v); });
+    ind.kijun.forEach(v => { if (v != null) vals.push(v); });
+    ind.senkouA.forEach(v => { if (v != null) vals.push(v); });
+    ind.senkouB.forEach(v => { if (v != null) vals.push(v); });
+  }
+
+  let lo = Math.min(...vals), hi = Math.max(...vals);
+  if (lo === hi) { hi = lo * 1.01 || 1; lo = lo * 0.99; }
+
+  const X = i => padL + (totalLen < 2 ? 0 : (i / (totalLen - 1)) * (W - padL - padR));
+  const Y = v => padT + (1 - (v - lo) / (hi - lo)) * (H - padT - padB);
+
+  // 1. Ichimoku Cloud (구름대)
+  let ichimokuCloudSvg = '';
+  let ichimokuLinesSvg = '';
+  if (showIchimoku) {
+    let cloudPaths = '';
+    const cloudLen = pts.length + 26;
+    let inCloud = false, startIdx = -1;
+
+    for (let i = 0; i < cloudLen; i++) {
+      const a = ind.senkouA[i];
+      const b = ind.senkouB[i];
+      if (a != null && b != null) {
+        if (!inCloud) { inCloud = true; startIdx = i; }
+      } else {
+        if (inCloud) {
+          cloudPaths += buildCloudSegment(startIdx, i - 1, ind.senkouA, ind.senkouB, X, Y);
+          inCloud = false;
+        }
+      }
+    }
+    if (inCloud) {
+      cloudPaths += buildCloudSegment(startIdx, cloudLen - 1, ind.senkouA, ind.senkouB, X, Y);
+    }
+    ichimokuCloudSvg = cloudPaths;
+
+    let tenkanPath = '', kijunPath = '', chikouPath = '';
+    for (let i = 0; i < pts.length; i++) {
+      if (ind.tenkan[i] != null) tenkanPath += `${tenkanPath ? 'L' : 'M'}${X(i).toFixed(1)},${Y(ind.tenkan[i]).toFixed(1)}`;
+      if (ind.kijun[i] != null) kijunPath += `${kijunPath ? 'L' : 'M'}${X(i).toFixed(1)},${Y(ind.kijun[i]).toFixed(1)}`;
+      if (ind.chikou[i] != null) chikouPath += `${chikouPath ? 'L' : 'M'}${X(i).toFixed(1)},${Y(ind.chikou[i]).toFixed(1)}`;
+    }
+
+    ichimokuLinesSvg = `
+      ${tenkanPath ? `<path d="${tenkanPath}" fill="none" stroke="#ff9f43" stroke-width="1.2" opacity="0.95"/>` : ''}
+      ${kijunPath ? `<path d="${kijunPath}" fill="none" stroke="#00d2d3" stroke-width="1.2" opacity="0.95"/>` : ''}
+      ${chikouPath ? `<path d="${chikouPath}" fill="none" stroke="#2ecc71" stroke-width="1" stroke-dasharray="3 2" opacity="0.75"/>` : ''}
+    `;
+  }
+
+  // 2. Moving Averages
+  let maSvg = '';
+  if (showMA) {
+    let m20Path = '', m60Path = '';
+    for (let i = 0; i < pts.length; i++) {
+      if (ind.ma20[i] != null) m20Path += `${m20Path ? 'L' : 'M'}${X(i).toFixed(1)},${Y(ind.ma20[i]).toFixed(1)}`;
+      if (ind.ma60[i] != null) m60Path += `${m60Path ? 'L' : 'M'}${X(i).toFixed(1)},${Y(ind.ma60[i]).toFixed(1)}`;
+    }
+    maSvg = `
+      ${m20Path ? `<path d="${m20Path}" fill="none" stroke="#f1c40f" stroke-width="1.2" opacity="0.9"/>` : ''}
+      ${m60Path ? `<path d="${m60Path}" fill="none" stroke="#9b59b6" stroke-width="1.2" opacity="0.9"/>` : ''}
+    `;
+  }
+
+  // 3. Price Main Line & Area
+  const line = pts.map((p, i) => `${i ? 'L' : 'M'}${X(i).toFixed(1)},${Y(p.c).toFixed(1)}`).join('');
+  const first = pts[0].c, last = pts[pts.length - 1].c, up = last >= first;
+  const col = up ? 'var(--up)' : 'var(--down)';
+  const area = `${line}L${X(pts.length - 1).toFixed(1)},${(H - padB).toFixed(1)}L${X(0).toFixed(1)},${(H - padB).toFixed(1)}Z`;
+
+  // 4. Avg Line
+  let avgEl = '';
+  if (avg > 0) {
+    const ay = Y(avg).toFixed(1);
+    avgEl = `<line x1="${padL}" y1="${ay}" x2="${W - padR}" y2="${ay}" stroke="var(--ink-faint)" stroke-width="1" stroke-dasharray="4 3"/>
+    <text x="${padL + 2}" y="${(+ay - 3)}" font-size="9" fill="var(--ink-faint)">평균 ${fmt(market, avg)}</text>`;
+  }
+
+  // Legend badges at top
+  let legendBadges = [];
+  if (showMA) {
+    legendBadges.push(`<tspan fill="#f1c40f">● MA20</tspan>`, `<tspan fill="#9b59b6">● MA60</tspan>`);
+  }
+  if (showIchimoku) {
+    legendBadges.push(`<tspan fill="#ff9f43">● 전환(9)</tspan>`, `<tspan fill="#00d2d3">● 기준(26)</tspan>`, `<tspan fill="#e0392b">░ 구름대</tspan>`);
+  }
+  const legendHtml = legendBadges.length ? `<g transform="translate(${padL}, 11)">
+    <text x="0" y="0" font-size="8.5" font-weight="700" fill="var(--ink-soft)">${legendBadges.join('  ')}</text>
+  </g>` : '';
+
+  let mainSvg = `<svg viewBox="0 0 ${W} ${H}" width="100%" preserveAspectRatio="xMidYMid meet" style="display:block">
+    ${ichimokuCloudSvg}
     <path d="${area}" fill="${col}" opacity="0.08"/>
     <path d="${line}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    ${maSvg}
+    ${ichimokuLinesSvg}
     ${avgEl}
-    <circle cx="${X(pts.length-1).toFixed(1)}" cy="${Y(last).toFixed(1)}" r="3.2" fill="${col}"/>
-    <text x="${W-padR}" y="11" text-anchor="end" font-size="9.5" font-weight="700" fill="${col}">${fmt(market,last)}</text>
+    <circle cx="${X(pts.length - 1).toFixed(1)}" cy="${Y(last).toFixed(1)}" r="3.2" fill="${col}"/>
+    <text x="${W - padR}" y="11" text-anchor="end" font-size="9.5" font-weight="700" fill="${col}">${fmt(market, last)}</text>
+    ${legendHtml}
   </svg>`;
+
+  // 5. RSI Sub Chart SVG
+  let rsiSvg = '';
+  if (showRSI) {
+    const rsiH = 65, rsiPadT = 14, rsiPadB = 10;
+    const rsiY = v => rsiPadT + (1 - v / 100) * (rsiH - rsiPadT - rsiPadB);
+
+    let rsiPath = '';
+    let lastRsi = null;
+    for (let i = 0; i < pts.length; i++) {
+      if (ind.rsi[i] != null) {
+        rsiPath += `${rsiPath ? 'L' : 'M'}${X(i).toFixed(1)},${rsiY(ind.rsi[i]).toFixed(1)}`;
+        lastRsi = ind.rsi[i];
+      }
+    }
+
+    const rsiValStr = lastRsi != null ? lastRsi.toFixed(1) : '—';
+    const rsiCol = lastRsi >= 70 ? 'var(--up)' : lastRsi <= 30 ? 'var(--down)' : '#a29bfe';
+
+    rsiSvg = `<svg viewBox="0 0 ${W} ${rsiH}" width="100%" preserveAspectRatio="xMidYMid meet" style="display:block;border-top:1px dashed var(--line);margin-top:4px;">
+      <!-- Overbought / Oversold shading -->
+      <rect x="${padL}" y="${rsiY(100)}" width="${W - padL - padR}" height="${rsiY(70) - rsiY(100)}" fill="var(--up)" opacity="0.06"/>
+      <rect x="${padL}" y="${rsiY(30)}" width="${W - padL - padR}" height="${rsiY(0) - rsiY(30)}" fill="var(--down)" opacity="0.06"/>
+      
+      <!-- Reference lines -->
+      <line x1="${padL}" y1="${rsiY(70)}" x2="${W - padR}" y2="${rsiY(70)}" stroke="var(--up)" stroke-width="0.8" stroke-dasharray="3 2" opacity="0.5"/>
+      <text x="${padL + 2}" y="${rsiY(70) - 2}" font-size="7.5" font-weight="700" fill="var(--up)">70 (과매수)</text>
+
+      <line x1="${padL}" y1="${rsiY(50)}" x2="${W - padR}" y2="${rsiY(50)}" stroke="var(--ink-faint)" stroke-width="0.6" stroke-dasharray="2 2" opacity="0.4"/>
+
+      <line x1="${padL}" y1="${rsiY(30)}" x2="${W - padR}" y2="${rsiY(30)}" stroke="var(--down)" stroke-width="0.8" stroke-dasharray="3 2" opacity="0.5"/>
+      <text x="${padL + 2}" y="${rsiY(30) + 7}" font-size="7.5" font-weight="700" fill="var(--down)">30 (과매도)</text>
+
+      <!-- RSI Line -->
+      ${rsiPath ? `<path d="${rsiPath}" fill="none" stroke="#a29bfe" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>` : ''}
+
+      <!-- Current RSI value label -->
+      <text x="${W - padR}" y="10" text-anchor="end" font-size="8.5" font-weight="800" fill="${rsiCol}">RSI(14): ${rsiValStr}</text>
+    </svg>`;
+  }
+
+  return mainSvg + rsiSvg;
 }
+
 async function loadAndDraw(p){
   const box=$('dChart');
   if(!(p.ticker&&p.ticker.trim())){
@@ -1402,7 +1673,7 @@ async function loadAndDraw(p){
   const want=p.id;
   try{
     const pts=await loadSeries(p,detailRange);
-    if(detailId!==want) return; // 그새 닫혔거나 바뀜
+    if(detailId!==want) return;
     box.innerHTML=drawChart(pts,calc(p).avg,p.market);
   }catch(e){
     if(detailId!==want) return;
@@ -1415,6 +1686,10 @@ function renderDetail(){
   $('dTitle').textContent=p.name;
   $('dOwner').textContent=ownerOf(p)+(p.broker?(' · '+p.broker):'')+(p.ticker?(' · '+p.ticker):'');
   document.querySelectorAll('.range-toggle button').forEach(b=>b.classList.toggle('on',b.dataset.r===detailRange));
+  document.querySelectorAll('.indicator-toggle .ind-btn').forEach(b=>{
+    const key = b.dataset.ind;
+    b.classList.toggle('on', !!activeIndicators[key]);
+  });
   $('dStats').innerHTML=`
     <div class="dstat"><div class="l">보유 수량</div><div class="v">${qtyStr(c.qty)}주</div></div>
     <div class="dstat"><div class="l">평균 단가</div><div class="v">${fmt(p.market,c.avg)}</div></div>
@@ -1438,6 +1713,15 @@ function openDetail(id){
 document.querySelectorAll('.range-toggle button').forEach(b=>b.addEventListener('click',()=>{
   detailRange=b.dataset.r; renderDetail();
 }));
+document.querySelectorAll('.indicator-toggle .ind-btn').forEach(b=>{
+  b.addEventListener('click',()=>{
+    const key = b.dataset.ind;
+    activeIndicators[key] = !activeIndicators[key];
+    b.classList.toggle('on', activeIndicators[key]);
+    const p = positions.find(x => x.id === detailId);
+    if (p) loadAndDraw(p);
+  });
+});
 $('dCloseBtn').addEventListener('click', closeSheets);
 $('dEditBtn').addEventListener('click',()=>{const id=detailId;$('detail').classList.remove('on');openSheet(id);});
 
