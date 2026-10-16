@@ -1,4 +1,4 @@
-const CACHE_NAME = 'portfolio-cache-v2';
+const CACHE_NAME = 'portfolio-cache-v3';
 const ASSETS = [
   '/',
   '/index.html',
@@ -33,30 +33,23 @@ self.addEventListener('fetch', (e) => {
   // Only handle GET requests
   if (e.request.method !== 'GET') return;
 
-  // Skip API routes
-  if (e.request.url.includes('/api/')) {
-    e.respondWith(fetch(e.request));
+  // Skip API routes and cross-origin requests
+  const url = new URL(e.request.url);
+  if (url.origin !== self.location.origin || url.pathname.startsWith('/api/')) {
     return;
   }
 
   e.respondWith(
     caches.match(e.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        // Fetch new version in background to update cache (Stale-While-Revalidate)
-        fetch(e.request).then((networkResponse) => {
-          if (networkResponse.status === 200) {
-            caches.open(CACHE_NAME).then((cache) => cache.put(e.request, networkResponse));
-          }
-        }).catch(() => {});
-        return cachedResponse;
-      }
-      return fetch(e.request).then((networkResponse) => {
-        if (networkResponse.status === 200) {
+      const fetchPromise = fetch(e.request).then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200) {
           const clone = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
         }
         return networkResponse;
-      });
+      }).catch(() => cachedResponse);
+
+      return cachedResponse || fetchPromise;
     })
   );
 });

@@ -4,8 +4,8 @@
   "description": "실시간 주식 포트폴리오 관리 서비스",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f6f3ec",
-  "theme_color": "#1b1d22",
+  "background_color": "#0d0e10",
+  "theme_color": "#0d0e10",
   "orientation": "portrait",
   "icons": [
     {

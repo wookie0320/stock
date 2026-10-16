@@ -151,8 +151,24 @@ header .date{font-size:.78rem;color:var(--ink-faint);font-weight:500;}
 .cur-pct{font-size:.7rem;font-weight:700;}
 .col-weight{grid-area:weight;}
 
-.h-owner{display:inline-block;font-size:.67rem;font-weight:800;color:var(--ink-soft);background:#22242a;border-radius:6px;padding:2px 7px;margin-bottom:5px;letter-spacing:.02em;}
-.holding .h-name{font-size:1.02rem;font-weight:700;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.info-top{display:flex;align-items:center;gap:6px;margin-bottom:5px;}
+.h-owner{display:inline-block;font-size:.67rem;font-weight:800;color:var(--ink-soft);background:#22242a;border-radius:6px;padding:2px 7px;letter-spacing:.02em;}
+.info-bottom{display:flex;align-items:center;gap:8px;min-width:0;}
+.holding .h-name{font-size:1.02rem;font-weight:700;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;}
+
+/* Reorder & Drag Handle Styles */
+.drag-handle{cursor:grab;color:var(--ink-faint);font-size:.95rem;line-height:1;user-select:none;padding:2px 4px;border-radius:4px;transition:color .15s,background .15s;flex-shrink:0;}
+.drag-handle:hover{color:var(--ink);background:var(--line);}
+.drag-handle:active{cursor:grabbing;}
+.order-btns{display:inline-flex;align-items:center;gap:2px;margin-left:auto;}
+.ord-btn{border:1px solid var(--line);background:var(--paper);color:var(--ink-soft);border-radius:5px;width:22px;height:20px;font-size:.62rem;line-height:1;padding:0;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all .12s;}
+.ord-btn:hover:not(:disabled){border-color:var(--ink-soft);color:var(--ink);background:var(--line);}
+.ord-btn:disabled{opacity:0.25;cursor:default;}
+.holding.dragging{opacity:0.45;border:1px dashed var(--accent);transform:scale(.99);}
+.holding.drag-over-top{border-top:2px solid var(--up);}
+.holding.drag-over-bottom{border-bottom:2px solid var(--up);}
+.btn-reset-order{border:1px solid var(--line);background:var(--card);color:var(--ink-soft);border-radius:7px;padding:3px 8px;font-size:.7rem;font-weight:700;font-family:inherit;cursor:pointer;margin-left:8px;transition:all .15s;}
+.btn-reset-order:hover{color:var(--ink);border-color:var(--ink-soft);}
 
 /* Labels for mobile layout only */
 .lbl-m{display:inline;color:var(--ink-faint);font-size:.67rem;font-weight:600;margin-right:4px;}
@@ -220,7 +236,6 @@ header .date{font-size:.78rem;color:var(--ink-faint);font-weight:500;}
   font-size:1rem;font-family:inherit;color:var(--ink);outline:none;transition:border-color .15s;font-variant-numeric:tabular-nums;
   appearance:none; -webkit-appearance:none;}
 .field input:focus, .field select:focus{border-color:var(--ink);}
-#f-name, #f-cur {background:#22242a;color:var(--ink-soft);border-color:transparent;}
 .field select {
   background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cpath%20d%3D%22M5%207.5L10%2012.5L15%207.5%22%20stroke%3D%22%238e94a0%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E");
   background-repeat: no-repeat;
@@ -329,7 +344,6 @@ body.light-theme {
 body.light-theme .tabs { background: #ece7da; }
 body.light-theme .tab.on { background: var(--card); color: var(--ink); box-shadow: 0 1px 3px rgba(27,29,34,.1); }
 body.light-theme .h-owner { background: #efe9dc; }
-body.light-theme #f-name, body.light-theme #f-cur { background: #ece7da; }
 body.light-theme .range-toggle { background: #ece7da; }
 body.light-theme .range-toggle button.on { background: var(--card); color: var(--ink); box-shadow: 0 1px 3px rgba(27,29,34,.1); }
 body.light-theme .mkt-toggle { background: #ece7da; }
@@ -343,6 +357,7 @@ body.light-theme .sheet { background: var(--paper); box-shadow: 0 -8px 40px rgba
 body.light-theme .db-avatar { background: #efe9dc; }
 body.light-theme .chip.on { color: #ffffff; }
 body.light-theme .ind-btn.on { color: #ffffff; }
+body.light-theme .ord-btn { background: #ffffff; }
 </style>
 </head>
 <body>
@@ -872,6 +887,53 @@ $('logoutBtn').addEventListener('click', async () => {
 });
 
 // ---- storage ----
+const ORDER_KEY='portfolio:order:v1';
+
+function getOrderMap(p) {
+  const lot0 = (p.lots && p.lots[0]) || null;
+  if (lot0 && typeof lot0.sortOrder === 'number') return lot0.sortOrder;
+  try {
+    const map = JSON.parse(localStorage.getItem(ORDER_KEY) || '{}');
+    if (typeof map[p.id] === 'number') return map[p.id];
+  } catch (e) {}
+  return null;
+}
+
+async function saveCustomOrder(orderedList) {
+  let map = {};
+  try { map = JSON.parse(localStorage.getItem(ORDER_KEY) || '{}'); } catch (e) {}
+  const updates = [];
+
+  orderedList.forEach((p, idx) => {
+    map[p.id] = idx;
+    if (p.lots && p.lots.length > 0) {
+      if (p.lots[0].sortOrder !== idx) {
+        p.lots[0].sortOrder = idx;
+        if (dbClient && user) {
+          updates.push(
+            dbClient.from('stocks').update({ lots: p.lots }).eq('id', p.id)
+          );
+        }
+      }
+    }
+  });
+
+  try { localStorage.setItem(ORDER_KEY, JSON.stringify(map)); } catch (e) {}
+  if (updates.length > 0) {
+    try { await Promise.all(updates); } catch (e) { console.error('Order sync error:', e); }
+  }
+}
+
+async function moveStockOrder(stockId, targetIndex, currentMine) {
+  const fromIndex = currentMine.findIndex(p => String(p.id) === String(stockId));
+  if (fromIndex < 0 || targetIndex < 0 || targetIndex >= currentMine.length || fromIndex === targetIndex) return;
+  const listCopy = [...currentMine];
+  const [moved] = listCopy.splice(fromIndex, 1);
+  listCopy.splice(targetIndex, 0, moved);
+  await saveCustomOrder(listCopy);
+  render();
+}
+
 async function load(){
   try{
     const f=localStorage.getItem(FX_KEY);
@@ -881,13 +943,25 @@ async function load(){
   if (!dbClient || !user) return;
 
   try {
+    const prevQuotes = {};
+    positions.forEach(p => {
+      if (p.id != null) prevQuotes[p.id] = { cur: p.cur, changePercent: p.changePercent };
+    });
+
     const { data, error } = await dbClient
       .from('stocks')
       .select('*')
       .order('created_at', { ascending: true });
 
     if (error) throw error;
-    positions = data || [];
+    positions = (data || []).map(p => {
+      const prev = prevQuotes[p.id];
+      if (prev) {
+        if (prev.changePercent != null) p.changePercent = prev.changePercent;
+        if (prev.cur != null && prev.cur > 0) p.cur = prev.cur;
+      }
+      return p;
+    });
   } catch (e) {
     console.error('Error loading positions from Supabase:', e);
   }
@@ -954,12 +1028,12 @@ let activeListTab = 'holdings';
 
 const CHART_COLORS = ['#ff4d4d', '#ff9f43', '#10ac84', '#2e86de', '#9b59b6', '#00d2d3', '#f1c40f', '#8395a7'];
 
-function renderDonutChart(segments, tEval) {
+function renderDonutChart(segments, tEval, totalCount) {
   const svg = $('donutSvg');
   const legend = $('donutLegend');
   if (!svg || !legend) return;
 
-  $('donutTotalCount').textContent = segments.length;
+  $('donutTotalCount').textContent = totalCount != null ? totalCount : segments.length;
 
   if (segments.length === 0 || tEval === 0) {
     svg.innerHTML = `<circle cx="50" cy="50" r="38" fill="transparent" stroke="var(--line)" stroke-width="12" />`;
@@ -1010,7 +1084,7 @@ function renderWeightsList(segments, tEval) {
     return;
   }
 
-  const top4 = segments.slice(0, 4);
+  const top4 = segments.filter(s => s.name !== '기타').slice(0, 4);
   container.innerHTML = top4.map(seg => `
     <div class="weight-item">
       <div class="weight-info">
@@ -1042,9 +1116,16 @@ function render(){
 
     let mine=positions.filter(p=>p.market===activeTab && calc(p).qty > 0);
     if(ownerFilter!==null) mine=mine.filter(p=>ownerOf(p)===ownerFilter);
-    mine.sort((a,b)=>{const oa=ownerOf(a),ob=ownerOf(b);
+    mine.sort((a,b)=>{
+      const ordA = getOrderMap(a);
+      const ordB = getOrderMap(b);
+      if (ordA !== null && ordB !== null) return ordA - ordB;
+      if (ordA !== null) return -1;
+      if (ordB !== null) return 1;
+      const oa=ownerOf(a),ob=ownerOf(b);
       if(oa!==ob)return oa==='미지정'?1:ob==='미지정'?-1:oa.localeCompare(ob,'ko');
-      return (a.name||'').localeCompare(b.name||'','ko');});
+      return (a.name||'').localeCompare(b.name||'','ko');
+    });
 
     let tBuy=0,tEval=0;
     mine.forEach(p=>{const c=calc(p);tBuy+=c.buy;tEval+=c.ev;});
@@ -1073,7 +1154,7 @@ function render(){
     $('panel2Title').textContent = '자산 비중';
     $('panel3Title').textContent = '투자 비중 (Top 4)';
     $('donutCenterLabel').textContent = '종목 수';
-    renderDonutChart(segments, tEval);
+    renderDonutChart(segments, tEval, mine.length);
     renderWeightsList(segments, tEval);
 
     const list=$('list');
@@ -1105,10 +1186,19 @@ function render(){
       const weight = tEval > 0 ? (c.ev / tEval) * 100 : 0;
       const color = CHART_COLORS[i % CHART_COLORS.length];
 
-      return `<div class="holding" data-id="${p.id}" style="animation-delay:${i*45}ms">
+      return `<div class="holding" draggable="true" data-id="${p.id}" data-idx="${i}" style="animation-delay:${i*45}ms">
         <div class="col-info">
-          <span class="h-owner">${esc(ownerOf(p))}${p.broker ? ' · ' + esc(p.broker) : ''}</span>
-          <div class="h-name">${esc(p.name)}</div>
+          <div class="info-top">
+            <span class="h-owner">${esc(ownerOf(p))}${p.broker ? ' · ' + esc(p.broker) : ''}</span>
+            <div class="order-btns">
+              <button class="ord-btn" data-dir="-1" data-idx="${i}" title="위로 이동" ${i===0?'disabled':''}>▲</button>
+              <button class="ord-btn" data-dir="1" data-idx="${i}" title="아래로 이동" ${i===mine.length-1?'disabled':''}>▼</button>
+            </div>
+          </div>
+          <div class="info-bottom">
+            <span class="drag-handle" title="드래그하여 순서 변경">⠿</span>
+            <div class="h-name">${esc(p.name)}</div>
+          </div>
         </div>
         <div class="col-eval">${dmoney(c.ev)}</div>
         <div class="col-profit">
@@ -1134,7 +1224,85 @@ function render(){
         </div>
       </div>`;
     }).join('');
-    list.querySelectorAll('.holding').forEach(el=>el.addEventListener('click',()=>openDetail(el.dataset.id)));
+
+    let draggedIdx = null;
+    list.querySelectorAll('.holding').forEach(el=>{
+      el.addEventListener('click',(e)=>{
+        if (e.target.closest('.ord-btn') || e.target.closest('.drag-handle')) return;
+        openDetail(el.dataset.id);
+      });
+
+      el.addEventListener('dragstart',(e)=>{
+        draggedIdx = +el.dataset.idx;
+        el.classList.add('dragging');
+        if (e.dataTransfer) {
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', el.dataset.id);
+        }
+      });
+
+      el.addEventListener('dragend',()=>{
+        el.classList.remove('dragging');
+        list.querySelectorAll('.holding').forEach(row=>{
+          row.classList.remove('drag-over-top','drag-over-bottom');
+        });
+        draggedIdx = null;
+      });
+
+      el.addEventListener('dragover',(e)=>{
+        e.preventDefault();
+        if (draggedIdx === null) return;
+        const targetIdx = +el.dataset.idx;
+        if (targetIdx === draggedIdx) return;
+        const rect = el.getBoundingClientRect();
+        const midY = rect.top + rect.height / 2;
+        el.classList.remove('drag-over-top','drag-over-bottom');
+        if (e.clientY < midY) {
+          el.classList.add('drag-over-top');
+        } else {
+          el.classList.add('drag-over-bottom');
+        }
+      });
+
+      el.addEventListener('dragleave',()=>{
+        el.classList.remove('drag-over-top','drag-over-bottom');
+      });
+
+      el.addEventListener('drop',async (e)=>{
+        e.preventDefault();
+        el.classList.remove('drag-over-top','drag-over-bottom');
+        if (draggedIdx === null) return;
+        let targetIdx = +el.dataset.idx;
+        if (targetIdx === draggedIdx) return;
+        const rect = el.getBoundingClientRect();
+        const midY = rect.top + rect.height / 2;
+        if (e.clientY > midY && draggedIdx < targetIdx) {
+          // drop below target when moving down -> targetIdx stays same
+        } else if (e.clientY < midY && draggedIdx > targetIdx) {
+          // drop above target when moving up -> targetIdx stays same
+        } else if (e.clientY > midY && draggedIdx > targetIdx) {
+          targetIdx += 1;
+        } else if (e.clientY < midY && draggedIdx < targetIdx) {
+          targetIdx -= 1;
+        }
+        const draggedItem = mine[draggedIdx];
+        if (draggedItem) {
+          await moveStockOrder(draggedItem.id, targetIdx, mine);
+        }
+      });
+    });
+
+    list.querySelectorAll('.ord-btn').forEach(btn=>{
+      btn.addEventListener('click',async (e)=>{
+        e.stopPropagation();
+        const idx = +btn.dataset.idx;
+        const dir = +btn.dataset.dir;
+        const item = mine[idx];
+        if (item) {
+          await moveStockOrder(item.id, idx + dir, mine);
+        }
+      });
+    });
   } else {
     $('heroLabel').textContent = '실현 손익';
     $('buyLabel').textContent = '실현 매수금액';
@@ -1201,7 +1369,7 @@ function render(){
     $('panel2Title').textContent = '매도 비중';
     $('panel3Title').textContent = '실현 매도 (Top 4)';
     $('donutCenterLabel').textContent = '종목 수';
-    renderDonutChart(segments, tRealSell);
+    renderDonutChart(segments, tRealSell, sortedSales.length);
     renderWeightsList(segments, tRealSell);
 
     const list=$('list');
@@ -1799,6 +1967,7 @@ async function onSellSave() {
 
   try {
     let remaining = sellQty;
+    const prevSortOrder = (p.lots && p.lots[0] && typeof p.lots[0].sortOrder === 'number') ? p.lots[0].sortOrder : undefined;
     let updatedLots = JSON.parse(JSON.stringify(p.lots || []));
     for (let i = 0; i < updatedLots.length && remaining > 0; i++) {
       const q = updatedLots[i].qty;
@@ -1811,6 +1980,9 @@ async function onSellSave() {
       }
     }
     updatedLots = updatedLots.filter(l => l.qty > 0);
+    if (updatedLots.length > 0 && prevSortOrder !== undefined) {
+      updatedLots[0].sortOrder = prevSortOrder;
+    }
 
     const updatedSales = JSON.parse(JSON.stringify(p.sales || []));
     updatedSales.push({
@@ -1856,6 +2028,7 @@ function renderLots(){
   $('lots').querySelectorAll('input').forEach(inp=>inp.addEventListener('input',()=>{readSheet();recalcSheet();}));
 }
 function readSheet(){
+  const prevSortOrder = (draft.lots && draft.lots[0] && typeof draft.lots[0].sortOrder === 'number') ? draft.lots[0].sortOrder : undefined;
   draft.name=$('f-name').value.trim(); draft.owner=$('f-owner').value.trim();
   draft.broker=$('f-broker').value.trim();
   draft.ticker=$('f-ticker').value.trim(); draft.cur=$('f-cur').value;
@@ -1863,6 +2036,9 @@ function readSheet(){
     date:r.querySelector('.lot-date').value,
     price:parseFloat(r.querySelector('.lot-price').value) || 0,
     qty:parseFloat(r.querySelector('.lot-qty').value) || 0}));
+  if (draft.lots.length > 0 && prevSortOrder !== undefined) {
+    draft.lots[0].sortOrder = prevSortOrder;
+  }
 }
 function recalcSheet(){const c=calc(draft);$('avgOut').textContent=c.qty>0?fmt(draft.market,c.avg):'—';$('qtyOut').textContent=qtyStr(c.qty);}
 
@@ -1948,7 +2124,11 @@ $('f-cur').addEventListener('input',readSheet);
 async function onSave(){
   readSheet();
   if(!draft.name){$('f-name').focus();return;}
+  const prevSortOrder = (draft.lots && draft.lots[0] && typeof draft.lots[0].sortOrder === 'number') ? draft.lots[0].sortOrder : undefined;
   draft.lots=draft.lots.filter(l=>(+l.price||0)>0&&(+l.qty||0)>0);
+  if (draft.lots.length > 0 && prevSortOrder !== undefined) {
+    draft.lots[0].sortOrder = prevSortOrder;
+  }
   
   if(!dbClient || !user) {
     alert('슈파베이스가 연동되어 있지 않거나 로그인 세션이 만료되었습니다.');
@@ -2031,6 +2211,7 @@ $('dSellBtn').addEventListener('click', () => {
   if (!p) return;
   
   $('sStockName').textContent = p.name + ' (' + (p.ticker || '코드 없음') + ')';
+  $('sellPriceLabel').textContent = p.market === 'us' ? '매도단가 ($)' : '매도단가 (원)';
   $('s-date').value = todayStr();
   $('s-price').value = p.cur || '';
   $('s-qty').value = '';
